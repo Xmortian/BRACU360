@@ -339,6 +339,139 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         textAlign: 'center',
     },
+        bottomMenu: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderColor: '#ccc',
+    },
+    menuItem: {
+        alignItems: 'center',
+        flex: 1,
+        paddingVertical: 10,
+    },
+    menuText: {
+        fontSize: 12,
+        marginTop: 5,
+        fontWeight: '600',
+    },
+    courseCard: {
+        marginBottom: 10,
+        borderRadius: 12,
+        elevation: 2,
+    },
+    cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 10,
+},
+cardActionButton: {
+    alignItems: 'center',
+    flex: 1,
+},
+    textInput: {
+        marginBottom: 15,
+    },
+    dropdownButton: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 12,
+        borderRadius: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    dropdownItem: {
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+    },
+    friendCard: {
+    borderRadius: 15,
+    elevation: 2,
+},
+friendCourses: {
+    fontSize: 14,
+    marginBottom: 5,
+},
+friendStatus: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 5,
+},
+addFriendModalContent: {
+    paddingVertical: 10,
+},
+textInput: {
+    marginBottom: 15,
+},
+uploadRoutineButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+},
+uploadRoutineButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+},
+emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+},
+emptyListText: {
+    fontSize: 16,
+    textAlign: 'center',
+},
+// --- NEW STYLES FOR CGPA CALCULATOR ---
+cgpaCard: {
+    borderRadius: 15,
+    elevation: 2,
+    marginBottom: 15,
+},
+cgpaDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+},
+cgpaValueText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+},
+advancedToggle: {
+    padding: 15,
+    borderRadius: 15,
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+},
+courseListContainer: {
+    marginTop: 15,
+},
+courseDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+},
+courseGrade: {
+    fontSize: 14,
+},
+courseActions: {
+    flexDirection: 'row',
+},
+courseActionButton: {
+    marginLeft: 15,
+},
 });
 
+
+
 export default styles;
+

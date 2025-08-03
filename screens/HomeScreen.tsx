@@ -134,10 +134,10 @@ const HomeScreen = () => {
     const [isRoutineOverviewVisible, setIsRoutineOverviewVisible] = useState(false);
 
     const routineData = [
-        { id: '1', timeStart: '11:35', timeEnd: '13:05', course: 'Computer Science', lectureType: 'Lecture 2: Data management', room: 'UB02-0405', faculty: 'Ma\'am Safura Khalid', color: '#A7F3D0' },
-        { id: '2', timeStart: '13:15', timeEnd: '14:45', course: 'Digital Marketing', lectureType: 'Lecture 3: Shopify Creation', room: 'UB02-0104', faculty: 'Ma\'am Mitra', color: '#FDE68A' },
-        { id: '3', timeStart: '15:10', timeEnd: '16:40', course: 'Digital Marketing', lectureType: 'Lecture 4: SEO Basics', room: 'UB02-0104', faculty: 'Ma\'am Mitra', color: '#BFDBFE' },
-        { id: '4', timeStart: '16:50', timeEnd: '18:20', course: 'Introduction to Psychology', lectureType: 'Lecture 1: Human Behavior', room: 'UB02-0601', faculty: 'Mr. Ahmed Khan', color: '#D1FAE5' },
+        { id: '1', timeStart: '9:30', timeEnd: '11:00', course: 'Computer Science', room: '9G-32C', faculty: 'KSD', color: '#A7F3D0' },
+        { id: '2', timeStart: '11:00', timeEnd: '12:30', course: 'Digital Marketing', room: '8F-12C', faculty: 'STV', color: '#FDE68A' },
+        { id: '3', timeStart: '2:00', timeEnd: '3:30', course: 'Digital Marketing', room: '12H-36C', faculty: 'ANY', color: '#BFDBFE' },
+        { id: '4', timeStart: '3:30', timeEnd: '5:00', course: 'Introduction to Psychology', room: '8G-19C', faculty: 'LLY', color: '#D1FAE5' },
     ];
 
     const navigateDate = (direction) => {
@@ -235,7 +235,6 @@ const HomeScreen = () => {
                                 </View>
                                 <View style={styles.classCardDetails}>
                                     <Title style={styles.classCourseTitle}>{item.course}</Title>
-                                    <Paragraph style={styles.classLectureType}>{item.lectureType}</Paragraph>
                                     <View style={styles.classInfoRow}>
                                         <MapPin size={16} color="#444" />
                                         <Text style={styles.classInfoText}>{item.room}</Text>

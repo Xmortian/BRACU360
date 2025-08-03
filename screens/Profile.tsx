@@ -238,10 +238,9 @@ const ProfileScreen = () => {
                 </Text>
                 <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface }]}>
                     <Card.Content>
-                        <Title style={{ color: theme.colors.onSurface }}>John Doe</Title>
-                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Student ID: 12345678</Paragraph>
+                        <Title style={{ color: theme.colors.onSurface }}>Moutmayen Nafis</Title>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Student ID: 22201411</Paragraph>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Major: Computer Science</Paragraph>
-                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Email: john.doe@bracu.ac.bd</Paragraph>
                     </Card.Content>
                 </Card>
 
