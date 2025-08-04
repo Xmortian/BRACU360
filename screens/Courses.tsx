@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, FlatList, StyleSheet } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, FlatList, Image, Platform, Dimensions } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme, TextInput } from 'react-native-paper';
-import { Camera, FileText, CalendarCheck, Calendar, ChevronDown } from 'lucide-react-native';
+import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, Trash } from 'lucide-react-native';
+import { DatePickerModal } from 'react-native-paper-dates';
+import { Camera } from 'expo-camera';
+import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import styles from '../styles/styles';
 
 // --- Deadline Modal Component ---
-const DeadlineModal = ({ visible, onClose, courseName }) => {
+const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
     const theme = useTheme();
-    
-    // State for new fields
     const [deadlineName, setDeadlineName] = useState('');
     const [deadlineDate, setDeadlineDate] = useState(new Date());
     const [reminderDays, setReminderDays] = useState(1);
     const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
 
     const reminderOptions = [1, 2, 3, 4, 5, 6, 7];
 
@@ -21,14 +24,31 @@ const DeadlineModal = ({ visible, onClose, courseName }) => {
             Alert.alert("Error", "Please enter a name for the deadline.");
             return;
         }
-        Alert.alert(
-            "Deadline Saved!", 
-            `Course: ${courseName}\nName: ${deadlineName}\nDate: ${deadlineDate.toDateString()}\nReminder: ${reminderDays} days before.`
-        );
+        if (!deadlineDate) {
+            Alert.alert("Error", "Please select a deadline date.");
+            return;
+        }
+        onAddDeadline(courseId, { id: Math.random().toString(), name: deadlineName, date: deadlineDate.toISOString(), reminderDays });
+        
+        // Reset state on close
+        setDeadlineName('');
+        setDeadlineDate(new Date());
+        setReminderDays(1);
         onClose();
-        setDeadlineName(''); // Reset state on close
     };
 
+    const onDateConfirm = (params) => {
+        setShowDatePicker(false);
+        setDeadlineDate(params.date);
+    };
+
+    const onTimeChange = (event, selectedTime) => {
+        setShowTimePicker(Platform.OS === 'ios');
+        if (selectedTime) {
+            setDeadlineDate(selectedTime);
+        }
+    };
+    
     return (
         <Modal
             animationType="slide"
@@ -39,11 +59,10 @@ const DeadlineModal = ({ visible, onClose, courseName }) => {
             <View style={styles.modalOverlay}>
                 <View style={[styles.modalContainer, { backgroundColor: theme.colors.surface, height: 'auto' }]}>
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add Deadline</Text>
+                        <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add New Deadline</Text>
                         <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>Close</PaperButton>
                     </View>
                     <ScrollView contentContainerStyle={{ paddingVertical: 10 }}>
-                        {/* New: Deadline Name Input */}
                         <TextInput
                             label="Deadline Name (e.g. Quiz 1)"
                             value={deadlineName}
@@ -51,16 +70,37 @@ const DeadlineModal = ({ visible, onClose, courseName }) => {
                             style={styles.textInput}
                         />
 
-                        {/* Date Picker Placeholder */}
-                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant, fontSize: 18, marginBottom: 10 }]}>Deadline Date</Text>
-                        <TouchableOpacity onPress={() => Alert.alert('Date Picker', 'This is a placeholder for a date picker component.')}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant, fontSize: 18, marginBottom: 10 }]}>Deadline Date & Time</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+                            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{flexDirection: 'row', alignItems: 'center'}}>
                                 <Calendar size={24} color={theme.colors.onSurfaceVariant} style={{ marginRight: 10 }} />
-                                <Text style={{ fontSize: 16, color: theme.colors.onSurface }}>{deadlineDate.toDateString()}</Text>
-                            </View>
-                        </TouchableOpacity>
+                                <Text style={{ fontSize: 16, color: theme.colors.onSurface }}>{deadlineDate ? deadlineDate.toDateString() : 'Select date'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setShowTimePicker(true)} style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <Text style={{ fontSize: 16, color: theme.colors.onSurface }}>{deadlineDate ? deadlineDate.toLocaleTimeString() : 'Select time'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                        {showDatePicker && (
+                            <DatePickerModal
+                                locale="en"
+                                mode="single"
+                                visible={showDatePicker}
+                                onDismiss={() => setShowDatePicker(false)}
+                                date={deadlineDate}
+                                onConfirm={onDateConfirm}
+                            />
+                        )}
+                         {showTimePicker && (
+                            <DateTimePicker
+                                value={deadlineDate}
+                                mode="time"
+                                is24Hour={true}
+                                display="default"
+                                onChange={onTimeChange}
+                            />
+                        )}
 
-                        {/* Reminder Dropdown */}
                         <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant, fontSize: 18, marginBottom: 10 }]}>Remind Me</Text>
                         <TouchableOpacity onPress={() => setIsDropdownVisible(!isDropdownVisible)} style={[styles.dropdownButton, { borderColor: theme.colors.onSurfaceVariant }]}>
                             <Text style={{ color: theme.colors.onSurface }}>{reminderDays} day(s) before</Text>
@@ -96,46 +136,182 @@ const DeadlineModal = ({ visible, onClose, courseName }) => {
     );
 };
 
+// --- Camera Modal Component ---
+const CameraModal = ({ visible, onClose, onPictureSaved }) => {
+    const cameraRef = useRef(null);
+    const [hasPermission, setHasPermission] = useState(null);
+    const [type, setType] = useState('back');
+
+    useEffect(() => {
+        (async () => {
+            const { status } = await Camera.requestCameraPermissionsAsync();
+            const { status: microphoneStatus } = await Camera.requestMicrophonePermissionsAsync();
+            setHasPermission(status === 'granted' && microphoneStatus === 'granted');
+        })();
+    }, []);
+
+    const takePicture = async () => {
+        if (cameraRef.current) {
+            const photo = await cameraRef.current.takePictureAsync();
+            onPictureSaved(photo.uri);
+            onClose();
+        }
+    };
+
+    if (hasPermission === null) {
+        return <View />;
+    }
+    if (hasPermission === false) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text>No access to camera</Text>
+            </View>
+        );
+    }
+
+    return (
+        <Modal
+            visible={visible}
+            animationType="slide"
+            transparent={false}
+            onRequestClose={onClose}
+        >
+            <View style={{ flex: 1 }}>
+                <Camera style={{ flex: 1 }} type={type} ref={cameraRef}>
+                    <View style={{ flex: 1, backgroundColor: 'transparent', flexDirection: 'row' }}></View>
+                </Camera>
+                <View style={{ position: 'absolute', bottom: 20, width: '100%', alignItems: 'center' }}>
+                    <TouchableOpacity onPress={takePicture} style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
+                        <View style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: 'gray', backgroundColor: 'transparent' }} />
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={onClose} style={{ position: 'absolute', top: 50, left: 20 }}>
+                    <Text style={{ fontSize: 18, color: 'white' }}>✕</Text>
+                </TouchableOpacity>
+            </View>
+        </Modal>
+    );
+};
+
+// --- Notes Modal Component ---
+const NotesModal = ({ visible, onClose, notes, onRemoveNote }) => {
+    const theme = useTheme();
+
+    return (
+        <Modal
+            animationType="slide"
+            transparent={false}
+            visible={visible}
+            onRequestClose={onClose}
+        >
+            <Appbar.Header style={styles.appBar}>
+                <Appbar.Content title="Stored Notes" titleStyle={styles.appBarTitle} />
+                <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.onPrimary }}>Close</PaperButton>
+            </Appbar.Header>
+            <FlatList
+                data={notes}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                    <View style={{ margin: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, overflow: 'hidden' }}>
+                        <Image source={{ uri: item }} style={{ width: '100%', height: 300 }} resizeMode="contain" />
+                        <TouchableOpacity onPress={() => onRemoveNote(index)} style={{ position: 'absolute', top: 10, right: 10, backgroundColor: 'red', borderRadius: 20, padding: 5 }}>
+                            <Trash size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+                ListEmptyComponent={() => (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                        <Text style={{ color: theme.colors.onSurfaceVariant }}>No notes saved for this course yet.</Text>
+                    </View>
+                )}
+            />
+        </Modal>
+    );
+};
+
+
 // --- CoursesScreen Component ---
 const CoursesScreen = () => {
     const theme = useTheme();
+    const [isDeadlineModalVisible, setIsDeadlineModalVisible] = useState(false);
+    const [isCameraVisible, setIsCameraVisible] = useState(false);
+    const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
-    const [isModalVisible, setIsModalVisible] = useState(false);
 
-    // Dummy data for courses
-    const courses = [
-        { id: '1', courseName: 'Programming Language I', status: 'Deadline: 5 days left' },
-        { id: '2', courseName: 'Introduction to Psychology', status: 'Completed' },
-        { id: '3', courseName: 'Discrete Mathematics', status: 'Deadline: 14 days left' },
-        { id: '4', courseName: 'Object-Oriented Programming', status: 'No deadline set' },
-        { id: '5', courseName: 'Object-Oriented Programming', status: 'No deadline set' },
-        
-    ];
+    const [courses, setCourses] = useState([
+        { id: '1', courseName: 'Programming Language I', notes: [], deadlines: [{ id: 'd1', name: 'Assignment 2', date: '2025-08-08T18:00:00.000Z', reminderDays: 2 }] },
+        { id: '2', courseName: 'Introduction to Psychology', notes: [], deadlines: [] },
+        { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-08-17T12:00:00.000Z', reminderDays: 7 }] },
+        { id: '4', courseName: 'Object-Oriented Programming', notes: [], deadlines: [] },
+    ]);
 
-    const openDeadlineModal = (course) => {
+    const handleAddDeadline = (courseId, deadlineData) => {
+        setCourses(prevCourses => prevCourses.map(course =>
+            course.id === courseId ? { ...course, deadlines: [...course.deadlines, deadlineData] } : course
+        ));
+    };
+
+    const handlePictureSaved = (photoUri) => {
+        setCourses(prevCourses => prevCourses.map(course =>
+            course.id === selectedCourse.id ? { ...course, notes: [...course.notes, photoUri] } : course
+        ));
+    };
+
+    const handleRemoveNote = (noteIndex) => {
+        setCourses(prevCourses => prevCourses.map(course =>
+            course.id === selectedCourse.id ? { ...course, notes: course.notes.filter((_, index) => index !== noteIndex) } : course
+        ));
+    };
+
+    const openNotesModal = (course) => {
         setSelectedCourse(course);
-        setIsModalVisible(true);
+        setIsNotesModalVisible(true);
+    };
+
+    // Helper function to calculate time left
+    const calculateTimeLeft = (deadlineDate) => {
+        const now = new Date();
+        const deadline = new Date(deadlineDate);
+        const diffInMilliseconds = deadline.getTime() - now.getTime();
+        const diffInHours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
+        if (diffInHours > 0) {
+            return `${diffInHours} hours left`;
+        }
+        return 'Passed';
     };
 
     const renderCourseItem = ({ item }) => (
-        <Card style={[styles.courseCard, { backgroundColor: theme.colors.surface, marginBottom: 10, borderRadius: 24 }]}>
+        <Card style={[styles.courseCard, { backgroundColor: theme.colors.surface, marginBottom: 10, borderRadius: 12 }]}>
             <Card.Content>
                 <Title style={{ color: theme.colors.onSurface, marginBottom: 5 }}>{item.courseName}</Title>
-                <Paragraph style={{ color: item.status.includes('Deadline') ? theme.colors.error : theme.colors.onSurfaceVariant, marginBottom: 15 }}>{item.status}</Paragraph>
                 
-                {/* The 3 buttons per course card */}
+                {item.deadlines.length > 0 ? (
+                    item.deadlines.map(deadline => (
+                        <View key={deadline.id} style={{ marginBottom: 10 }}>
+                            <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
+                                {deadline.name}
+                            </Paragraph>
+                            <Paragraph style={{ color: calculateTimeLeft(deadline.date) === 'Passed' ? theme.colors.error : theme.colors.primary }}>
+                                {calculateTimeLeft(deadline.date)}
+                            </Paragraph>
+                        </View>
+                    ))
+                ) : (
+                    <Paragraph style={{ color: theme.colors.onSurfaceVariant, marginBottom: 15 }}>No deadlines!</Paragraph>
+                )}
+
                 <View style={styles.cardActions}>
-                    <TouchableOpacity onPress={() => Alert.alert('OCR Coming Soon', `This will scan notes for ${item.courseName}.`)} style={styles.cardActionButton}>
-                        <Camera size={20} color={theme.colors.primary} />
-                        <Text style={[styles.menuText, { color: theme.colors.primary }]}>Scan</Text>
+                    <TouchableOpacity onPress={() => { setSelectedCourse(item); setIsCameraVisible(true); }} style={styles.cardActionButton}>
+                        <CameraIcon size={20} color={theme.colors.primary} />
+                        <Text style={[styles.menuText, { color: theme.colors.primary }]}>Take Notes</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => Alert.alert('View Notes Coming Soon', `This will show notes for ${item.courseName}.`)} style={styles.cardActionButton}>
+                    <TouchableOpacity onPress={() => openNotesModal(item)} style={styles.cardActionButton}>
                         <FileText size={20} color={theme.colors.primary} />
-                        <Text style={[styles.menuText, { color: theme.colors.primary }]}>Notes</Text>
+                        <Text style={[styles.menuText, { color: theme.colors.primary }]}>Stored Notes</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => openDeadlineModal(item)} style={styles.cardActionButton}>
+                    <TouchableOpacity onPress={() => { setSelectedCourse(item); setIsDeadlineModalVisible(true); }} style={styles.cardActionButton}>
                         <CalendarCheck size={20} color={theme.colors.primary} />
-                        <Text style={[styles.menuText, { color: theme.colors.primary }]}>Deadline</Text>
+                        <Text style={[styles.menuText, { color: theme.colors.primary }]}>Add Deadline</Text>
                     </TouchableOpacity>
                 </View>
             </Card.Content>
@@ -152,17 +328,26 @@ const CoursesScreen = () => {
                 data={courses}
                 renderItem={renderCourseItem}
                 keyExtractor={item => item.id}
-      contentContainerStyle={[
-        styles.paddingContainer,
-        { paddingBottom: 100 } // <-- ADD THIS LINE
-    ]}
+                contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
             />
 
-            {/* Deadline Modal */}
+            {/* Modals */}
             <DeadlineModal
-                visible={isModalVisible}
-                onClose={() => setIsModalVisible(false)}
-                courseName={selectedCourse ? selectedCourse.courseName : ''}
+                visible={isDeadlineModalVisible}
+                onClose={() => setIsDeadlineModalVisible(false)}
+                courseId={selectedCourse?.id}
+                onAddDeadline={handleAddDeadline}
+            />
+            <CameraModal
+                visible={isCameraVisible}
+                onClose={() => setIsCameraVisible(false)}
+                onPictureSaved={handlePictureSaved}
+            />
+            <NotesModal
+                visible={isNotesModalVisible}
+                onClose={() => setIsNotesModalVisible(false)}
+                notes={selectedCourse?.notes || []}
+                onRemoveNote={handleRemoveNote}
             />
         </View>
     );

@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import styles from '../styles/styles';
+import { Dimensions } from 'react-native';
+import ImageViewer from 'react-native-image-zoom-viewer';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
+
+
 import {
     ChevronLeft,
     ChevronRight,
@@ -13,93 +19,56 @@ import {
 } from 'lucide-react-native';
 
 
-// --- Year Planner Modal Component ---
 function YearPlannerModal({ visible, onClose }) {
-    const theme = useTheme();
+    const images = [
+        {
+            url: '',
+            width: 7240,
+            o0height: 4640, 
+            props: {
+                source: require('../assets/year_planner.png'),
+            },
+        },
+    ];
 
     return (
         <Modal
             visible={visible}
-            animationType="slide"
             transparent={true}
+            animationType="fade"
             onRequestClose={onClose}
         >
-            <View style={{
-                flex: 1,
-                backgroundColor: '#000000aa',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: 10
-            }}>
-                <View style={{
-                    width: '100%',
-                    height: '90%',
-                    backgroundColor: 'white',
-                    borderRadius: 10,
-                    overflow: 'hidden'
-                }}>
+            <ImageViewer
+                imageUrls={images}
+                enableSwipeDown
+                onSwipeDown={onClose}
+                backgroundColor="#000"
+                renderIndicator={() => null}
+                renderHeader={() => (
                     <TouchableOpacity
                         onPress={onClose}
                         style={{
-                            alignSelf: 'flex-end',
-                            padding: 10,
-                            backgroundColor: '#eee',
-                            borderBottomLeftRadius: 10
+                            position: 'absolute',
+                            top: 40,
+                            right: 20,
+                            backgroundColor: 'rgba(255,255,255,0.8)',
+                            padding: 8,
+                            borderRadius: 4,
+                            zIndex: 99,
                         }}
                     >
-                        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+                        <Text style={{ fontWeight: 'bold' }}>✕</Text>
                     </TouchableOpacity>
-                    <ScrollView
-                        contentContainerStyle={{
-                            flexGrow: 1,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            padding: 10
-                        }}
-                        maximumZoomScale={3}
-                        minimumZoomScale={1}
-                        showsVerticalScrollIndicator={false}
-                        showsHorizontalScrollIndicator={false}
-                        centerContent={true}
-                    >
-                        <Image
-                            source={require('../assets/year_planner.png')}
-                            style={{
-                                width: '100%',
-                                height: undefined,
-                                aspectRatio: 1,
-                            }}
-                            resizeMode="contain"
-                        />
-                    </ScrollView>
-                </View>
-            </View>
+                )}
+            />
         </Modal>
     );
 }
 
-// --- Routine Overview Modal Component ---
+
 function RoutineOverviewModal({ visible, onClose }) {
     const theme = useTheme();
-    const routineOverviewContent = `
-    Your Daily Routine Overview:
-
-    Morning:
-    - 8:00 AM: Breakfast & Prep
-    - 9:00 AM: Class 1
-    - 10:30 AM: Study Session
-
-    Afternoon:
-    - 12:00 PM: Lunch Break
-    - 1:00 PM: Class 2
-    - 2:30 PM: Lab Session
-
-    Evening:
-    - 5:00 PM: Extracurriculars
-    - 7:00 PM: Dinner
-    - 8:00 PM: Homework/Assignments
-
-    This is a quick summary. For detailed schedule, use the main Routine tab.
+    const routineOverviewContent = ` ADD Your Routine
   `;
 
     return (

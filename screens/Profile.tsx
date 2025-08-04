@@ -155,7 +155,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
             <View style={styles.modalOverlay}>
                 <View style={[styles.modalContainer, { backgroundColor: theme.colors.surface }]}>
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>BRACU House Quiz!</Text>
+                        <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>BracU House!</Text>
                         <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>Close</PaperButton>
                     </View>
                     <ScrollView style={styles.modalContentScroll}>
@@ -178,7 +178,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
                             </View>
                         ) : (
                             <View style={styles.quizResultsContainer}>
-                                <Text style={[styles.quizResultsTitle, { color: theme.colors.onSurface }]}>Quiz Completed!</Text>
+                                <Text style={[styles.quizResultsTitle, { color: theme.colors.onSurface }]}>Sort Completed!</Text>
                                 <Text style={[styles.winnerText, { color: theme.colors.primary }]}>
                                     You have been sorted into House {winnerHouse}!
                                 </Text>
@@ -193,7 +193,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
                                     style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
                                     labelStyle={{ color: theme.colors.onPrimary }}
                                 >
-                                    Retake Quiz
+                                    Enroll
                                 </PaperButton>
                             </View>
                         )}
@@ -244,60 +244,52 @@ const ProfileScreen = () => {
                     </Card.Content>
                 </Card>
 
-                <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 10 }]}>
                     Sorting Hat
                 </Text>
 
-                {winningHouse ? (
-                    // Display sorted house if a winner exists
-                    <Card style={[styles.houseDisplayCard, { backgroundColor: theme.colors.surface }]}>
-                        <View style={styles.houseDisplayContent}>
-                            <Image source={houseLogoMapping[winningHouse]} style={styles.houseDisplayLogo} />
-                            <View style={styles.houseDisplayInfo}>
-                                <Title style={{ color: theme.colors.onSurface }}>Your BRACU House:</Title>
-                                <Text style={[styles.winnerDisplay, { color: theme.colors.primary }]}>
-                                    {winningHouse}
-                                </Text>
-                            </View>
-                        </View>
-                        <PaperButton
-                            mode="contained"
-                            onPress={handleRetakeQuiz}
-                            style={[styles.retryButton, { backgroundColor: theme.colors.primary, marginTop: 20 }]}
-                            labelStyle={{ color: theme.colors.onPrimary }}
-                        >
-                            Retake Quiz
-                        </PaperButton>
-                    </Card>
-                ) : (
-                    // Display sorting hat button if no winner exists
-                    <View style={styles.quizButtonContainer}>
-                        <Image
-                            source={houseLogoMapping['Danshiri']}
-                            style={styles.floatingLogo}
-                        />
-                        <Image
-                            source={houseLogoMapping['Chayaneer']}
-                            style={styles.floatingLogo}
-                        />
-                        <TouchableOpacity
-                            style={[styles.quizButton, { backgroundColor: '#423f66' }]}
-                            onPress={() => setIsQuizVisible(true)}
-                        >
-                            <Text style={styles.quizButtonText}>
-                                GET SORTED NOW
-                            </Text>
-                        </TouchableOpacity>
-                        <Image
-                            source={houseLogoMapping['Drubotara']}
-                            style={styles.floatingLogo}
-                        />
-                        <Image
-                            source={houseLogoMapping['Meghdut']}
-                            style={styles.floatingLogo}
-                        />
-                    </View>
-                )}
+// ... (inside the ProfileScreen component's return statement)
+
+{!winningHouse ? (
+    // Your "GET SORTED NOW" button and logos
+    <View style={styles.quizButtonContainer}>
+        <Image source={houseLogoMapping['Danshiri']} style={styles.floatingLogo} />
+        <Image source={houseLogoMapping['Chayaneer']} style={styles.floatingLogo} />
+        <TouchableOpacity
+            style={[styles.quizButton, { backgroundColor: '#423f66' }]}
+            onPress={() => setIsQuizVisible(true)}
+        >
+            <Text style={styles.quizButtonText}>
+                GET SORTED NOW
+            </Text>
+        </TouchableOpacity>
+        <Image source={houseLogoMapping['Moyurpankhi']} style={styles.floatingLogo} />
+        <Image source={houseLogoMapping['Drubotara']} style={styles.floatingLogo} />
+        <Image source={houseLogoMapping['Meghdut']} style={styles.floatingLogo} />
+    </View>
+) : (
+    // This is the updated code for the quiz result display
+    <Card style={[styles.houseDisplayCard, { backgroundColor: theme.colors.surface }]}>
+        <Card.Content>
+            <View style={styles.houseDisplayInfo}>
+                <Title style={{ color: theme.colors.onSurface }}>Your BracU House:</Title>
+                <Text style={[styles.winnerDisplay, { color: theme.colors.primary, textAlign: 'center' }]}>
+                    {winningHouse}
+                </Text>
+            </View>
+
+            <TouchableOpacity
+                style={[styles.quizButton, { backgroundColor: '#423f66', marginTop: 20 }]}
+                onPress={handleRetakeQuiz}
+            >
+                <Text style={styles.quizButtonText}>
+                    GET sorted Again
+                </Text>
+            </TouchableOpacity>
+        </Card.Content>
+    </Card>
+)}
+
             </ScrollView>
 
             {/* Quiz Modal */}

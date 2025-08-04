@@ -217,6 +217,9 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'white',
     },
+
+
+    
     // --- UPDATED STYLES FOR PROFILE AND QUIZ BUTTON ---
     profileCard: {
         marginBottom: 20,
@@ -225,18 +228,18 @@ const styles = StyleSheet.create({
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowRadius: 10,
     },
     quizButtonContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 10,
-        marginBottom: 20,
+        justifyContent: 'center',
+        paddingVertical: 5,
+        marginBottom: 10,
     },
     floatingLogo: {
-        width: 60,
-        height: 60,
+        width: 40,
+        height: 50,
         resizeMode: 'contain',
         marginHorizontal: -5,
     },
@@ -277,23 +280,23 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     houseDisplayLogo: {
-        width: 80,
-        height: 80,
+        width: 50,
+        height: 50,
         resizeMode: 'contain',
-        marginRight: 20,
+        marginRight: 50,
     },
     houseDisplayInfo: {
         flex: 1,
     },
     winnerDisplay: {
-        fontSize: 22,
+        fontSize: 15,
         fontWeight: 'bold',
         marginTop: 5,
         textAlign: 'left',
     },
     retryButton: {
-        marginTop: 10,
-        paddingHorizontal: 20,
+        marginTop: 15,
+        paddingHorizontal: 10,
         paddingVertical: 10,
         width: '100%', // Make button full width
     },
@@ -339,6 +342,9 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         textAlign: 'center',
     },
+
+
+
         bottomMenu: {
         flexDirection: 'row',
         justifyContent: 'space-around',
