@@ -22,7 +22,7 @@ import FriendsScreen from './screens/Friends';
 import CgpaCalcScreen from './screens/CgpaCalc';
 import AdditionalScreen from './screens/Additional';
 import WebViewsScreen from './screens/WebViews';
-
+import OCRScreen from './screens/OCRScreen';
 // Import the centralized styles file
 import styles from './styles/styles';
 
@@ -100,6 +100,8 @@ export default function App() {
                                 case 'ProfileTab':
                                     iconComponent = <User color={color} size={size} />;
                                     break;
+                                case 'OCRScreen':
+                                    iconComponent = <User color={color} size={size} />;
                                 default:
                                     iconComponent = <Home color={color} size={size} />;
                             }
@@ -114,6 +116,7 @@ export default function App() {
                     <Tab.Screen name="CoursesTab" component={CoursesScreen} options={{ tabBarLabel: 'Courses' }} />
                     <Tab.Screen name="FriendFinderTab" component={FriendsScreen} options={{ tabBarLabel: 'Friends' }} />
                     <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+                    <Tab.Screen name="OCRScreen" component={OCRScreen} options={{ tabBarLabel: 'OCR' }} />
                 </Tab.Navigator>
             </PaperProvider>
         </NavigationContainer>
