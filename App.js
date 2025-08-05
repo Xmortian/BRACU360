@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Appbar, DefaultTheme, Provider as PaperProvider, useTheme } from 'react-native-paper';
+import OcrScannerScreen from './screens/OcrScanner';
+import GradesheetReaderScreen from './screens/GradesheetReaderScreen.tsx';
 import {
     Globe,
     PlusCircle,
@@ -100,6 +102,11 @@ export default function App() {
                                 case 'ProfileTab':
                                     iconComponent = <User color={color} size={size} />;
                                     break;
+                                case 'OcrScannerScreen':
+                                    iconComponent = <User color={color} size={size} />;
+                                    break;
+                                case 'GradesheetReaderScreen':
+                                    iconComponent = <User color={color} size={size} />;
                                 default:
                                     iconComponent = <Home color={color} size={size} />;
                             }
@@ -114,6 +121,12 @@ export default function App() {
                     <Tab.Screen name="CoursesTab" component={CoursesScreen} options={{ tabBarLabel: 'Courses' }} />
                     <Tab.Screen name="FriendFinderTab" component={FriendsScreen} options={{ tabBarLabel: 'Friends' }} />
                     <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+                    <Tab.Screen name="OcrScannerScreen" component={OcrScannerScreen} options={{ tabBarLabel: 'OCR' }} />
+                    <Tab.Screen name="GradesheetReaderScreen" component={GradesheetReaderScreen} options={{ tabBarLabel: 'OCR2' }} />
+
+
+
+
                 </Tab.Navigator>
             </PaperProvider>
         </NavigationContainer>
