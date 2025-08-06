@@ -1,36 +1,43 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, StatusBar } from 'react-native';
 import { Appbar, Card, Title, Paragraph, useTheme, Button as PaperButton } from 'react-native-paper';
 import styles from '../styles/styles'; // Import the centralized styles
+import QrScannerModal from './QrScannerModal'; // Import the new modal
 
 const AdditionalScreen = () => {
     const theme = useTheme();
+    
 
     const features = [
         { name: 'Hall of Fame', action: () => Alert.alert('Feature Coming Soon', 'Hall of Fame BracU') },
-        { name: 'QR Code Scanner', action: () => Alert.alert('Feature Coming Soon', 'QR Code Scanner') },
         { name: 'Faculty Finder', action: () => Alert.alert('Feature Coming Soon', 'Find Where is your Faculty') },
         { name: 'Faculty Email Archive', action: () => Alert.alert('Feature Coming Soon', 'Faculty Email Archive') },
         { name: 'Bus Schedule', action: () => Alert.alert('Feature Coming Soon', 'Bus Schedule') },
         { name: 'Bus Routes', action: () => Alert.alert('Feature Coming Soon', 'BracU Bus Routes') },
         { name: 'Important Mails', action: () => Alert.alert('Feature Coming Soon', 'Important mails (OCA, Registrar, etc)') },
         { name: 'Club Showcase', action: () => Alert.alert('Feature Coming Soon', 'Club Showcase') },
-        { name: 'HeatMap of BracU', action: () => Alert.alert('Feature Coming Soon', 'HeatMap of Bracu') },
-        // { name: 'Khabar Dabar', action: () => Alert.alert('Feature Coming Soon', 'Khabar Dabar full list of items') },
         { name: 'Food Reviews', action: () => Alert.alert('Feature Coming Soon', 'Hangout spot and food item reviews') },
         { name: 'Course Reviews', action: () => Alert.alert('Feature Coming Soon', 'Courses Difficulty wise review and suggestions') },
         { name: 'Traffic Alert', action: () => Alert.alert('Feature Coming Soon', 'Alert when Heavy Traffic Near BracU') },
-        { name: 'Mosque Location', action: () => Alert.alert('Feature Coming Soon', 'Mosque Location') },
-        { name: 'Nearby Library', action: () => Alert.alert('Feature Coming Soon', 'Nearby Library') },
+        { name: 'Nearby Mosques', action: () => Alert.alert('Feature Coming Soon', 'Mosque Location') },
+        { name: 'Nearby Libraries', action: () => Alert.alert('Feature Coming Soon', 'Nearby Library') },
     ];
 
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Content title="Additional" titleStyle={styles.appBarTitle} />
+            <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+            <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
+                <Appbar.Content title="Additional" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
+                {/* Custom QR Scanner button in the top right */}
+                <TouchableOpacity 
+                    onPress={() => Alert.alert('Feature Coming Soon', 'QR Code Scanner')}
+                    style={[styles.appBarRightAction, { backgroundColor: theme.colors.primary }]}
+                >
+                    <Text style={[styles.appBarActionText, { color: theme.colors.onPrimary }]}>QR Scanner</Text>
+                </TouchableOpacity>
             </Appbar.Header>
 
-            <ScrollView style={styles.paddingContainer}>
+            <ScrollView contentContainerStyle={styles.paddingContainer}>
                 {/* Feature Grid */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
                     All Features

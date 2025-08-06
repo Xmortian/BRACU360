@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions} from 'react-native';
 
 const styles = StyleSheet.create({
     // --- General / Common Styles ---
@@ -701,6 +701,72 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 20,
     },
+    // Add these styles to your existing styles.js file
+
+// --- QR Scanner Modal Styles ---
+permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5', // Background color for permission screen
+},
+permissionText: {
+    fontSize: 18,
+    marginBottom: 10,
+    color: '#212121', // On surface text color
+},
+permissionErrorText: { // Specific for permission denied message
+    fontSize: 18,
+    marginBottom: 10,
+    color: '#D32F2F', // Error text color
+},
+scannerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black', // Black background for camera view
+},
+modalAppbar: {
+    elevation: 0,
+    shadowOpacity: 0,
+    backgroundColor: 'transparent',
+    height: 60,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10, // Ensure appbar is above scanner
+},
+scannedDataContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF', // White background for scanned data display
+    borderTopWidth: 1,
+    borderColor: '#E0E0E0', // Light grey border
+},
+scannedDataTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#212121', // On surface text color
+},
+scannedDataText: {
+    fontSize: 16,
+    marginTop: 5,
+    color: '#4A90E2', // Primary color for scanned data
+},
+scanOverlay: { // Visual overlay for scanning area
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+},
+scanOverlayInner: {
+    width: Dimensions.get('window').width * 0.7,
+    height: Dimensions.get('window').width * 0.7,
+    borderWidth: 2,
+    borderColor: 'white',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+},
 });
 
 export default styles;

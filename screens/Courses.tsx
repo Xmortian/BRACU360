@@ -1,11 +1,41 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, FlatList, Image, Platform, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, FlatList, Image, Platform, Dimensions, StatusBar } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme, TextInput } from 'react-native-paper';
 import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, Trash } from 'lucide-react-native';
 import { DatePickerModal } from 'react-native-paper-dates';
-import { Camera } from 'expo-camera';
-import DateTimePicker from '@react-native-community/datetimepicker'; // Import DateTimePicker
+import { Camera, CameraView } from 'expo-camera';
+
+import DateTimePicker from '@react-native-community/datetimepicker';
 import styles from '../styles/styles';
+
+// --- Custom Alert/Error Modal Component (Replaces Alert.alert) ---
+const CustomAlertModal = ({ visible, onClose, title, message }) => {
+    const theme = useTheme();
+    return (
+        <Modal
+            animationType="fade"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}
+        >
+            <View style={styles.centeredView}>
+                <View style={[styles.modalView, { backgroundColor: theme.colors.surface, borderColor: theme.colors.error }]}>
+                    <Text style={[styles.modalTitle, { color: theme.colors.error }]}>{title}</Text>
+                    <Text style={[styles.modalText, { color: theme.colors.onSurface }]}>{message}</Text>
+                    <PaperButton
+                        mode="contained"
+                        onPress={onClose}
+                        style={[styles.modalButton, { backgroundColor: theme.colors.error }]}
+                        labelStyle={[styles.modalButtonLabel, { color: theme.colors.onError }]}
+                    >
+                        <Text>OK</Text>
+                    </PaperButton>
+                </View>
+            </View>
+        </Modal>
+    );
+};
+
 
 // --- Deadline Modal Component ---
 const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
@@ -16,16 +46,25 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
     const [isDropdownVisible, setIsDropdownVisible] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [alertModalVisible, setAlertModalVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertTitle, setAlertTitle] = useState('');
 
     const reminderOptions = [1, 2, 3, 4, 5, 6, 7];
 
+    const showAlert = (title, message) => {
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setAlertModalVisible(true);
+    };
+
     const handleSave = () => {
         if (!deadlineName) {
-            Alert.alert("Error", "Please enter a name for the deadline.");
+            showAlert("Error", "Please enter a name for the deadline.");
             return;
         }
         if (!deadlineDate) {
-            Alert.alert("Error", "Please select a deadline date.");
+            showAlert("Error", "Please select a deadline date.");
             return;
         }
         onAddDeadline(courseId, { id: Math.random().toString(), name: deadlineName, date: deadlineDate.toISOString(), reminderDays });
@@ -60,7 +99,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
                 <View style={[styles.modalContainer, { backgroundColor: theme.colors.surface, height: 'auto' }]}>
                     <View style={styles.modalHeader}>
                         <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add New Deadline</Text>
-                        <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>Close</PaperButton>
+                        <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}><Text>Close</Text></PaperButton>
                     </View>
                     <ScrollView contentContainerStyle={{ paddingVertical: 10 }}>
                         <TextInput
@@ -91,7 +130,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
                                 onConfirm={onDateConfirm}
                             />
                         )}
-                         {showTimePicker && (
+                        {showTimePicker && (
                             <DateTimePicker
                                 value={deadlineDate}
                                 mode="time"
@@ -125,13 +164,19 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
                     <PaperButton
                         mode="contained"
                         onPress={handleSave}
-                        style={{ marginTop: 20 }}
+                        style={{ marginTop: 20, backgroundColor: theme.colors.primary }}
                         labelStyle={{ color: theme.colors.onPrimary }}
                     >
-                        Save Deadline
+                        <Text>Save Deadline</Text>
                     </PaperButton>
                 </View>
             </View>
+            <CustomAlertModal
+                visible={alertModalVisible}
+                onClose={() => setAlertModalVisible(false)}
+                title={alertTitle}
+                message={alertMessage}
+            />
         </Modal>
     );
 };
@@ -140,7 +185,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
 const CameraModal = ({ visible, onClose, onPictureSaved }) => {
     const cameraRef = useRef(null);
     const [hasPermission, setHasPermission] = useState(null);
-    const [type, setType] = useState('back');
+    const theme = useTheme(); // Use theme for colors
 
     useEffect(() => {
         (async () => {
@@ -159,7 +204,7 @@ const CameraModal = ({ visible, onClose, onPictureSaved }) => {
     };
 
     if (hasPermission === null) {
-        return <View />;
+        return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><Text>Requesting camera permission...</Text></View>;
     }
     if (hasPermission === false) {
         return (
@@ -177,9 +222,12 @@ const CameraModal = ({ visible, onClose, onPictureSaved }) => {
             onRequestClose={onClose}
         >
             <View style={{ flex: 1 }}>
-                <Camera style={{ flex: 1 }} type={type} ref={cameraRef}>
-                    <View style={{ flex: 1, backgroundColor: 'transparent', flexDirection: 'row' }}></View>
-                </Camera>
+                {/* Hardcoding type to 'back' to avoid Camera.Constants.Type issues */}
+                <CameraView style={{ flex: 1 }}  ref={cameraRef}>
+                    <View style={{ flex: 1, backgroundColor: 'transparent', flexDirection: 'row' }}>
+                        {/* Empty view to allow camera content to show */}
+                    </View>
+                </CameraView>
                 <View style={{ position: 'absolute', bottom: 20, width: '100%', alignItems: 'center' }}>
                     <TouchableOpacity onPress={takePicture} style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
                         <View style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: 'gray', backgroundColor: 'transparent' }} />
@@ -204,9 +252,9 @@ const NotesModal = ({ visible, onClose, notes, onRemoveNote }) => {
             visible={visible}
             onRequestClose={onClose}
         >
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Content title="Stored Notes" titleStyle={styles.appBarTitle} />
-                <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.onPrimary }}>Close</PaperButton>
+            <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
+                <Appbar.Content title="Stored Notes" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
+                <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.onPrimary }}><Text>Close</Text></PaperButton>
             </Appbar.Header>
             <FlatList
                 data={notes}
@@ -320,8 +368,9 @@ const CoursesScreen = () => {
 
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Content title="Courses" titleStyle={styles.appBarTitle} />
+            <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+            <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
+                <Appbar.Content title="Courses" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
             </Appbar.Header>
 
             <FlatList
