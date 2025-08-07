@@ -34,8 +34,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "react-native-vision-camera",
-      "expo-barcode-scanner"
+      "react-native-vision-camera"
     ]
   }
 }

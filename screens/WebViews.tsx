@@ -49,7 +49,9 @@ function WebviewListScreen() {
     const theme = useTheme();
 
     const websites = [
-        { name: 'Pre-Reg', url: 'https://preprereg.vercel.app/' },
+        { name: 'PrePre-Reg', url: 'https://preprereg.vercel.app/' },
+        { name: 'Connect Unlocked', url: 'https://usis.eniamza.com/n' },
+
         { name: 'BRACU Official', url: 'https://www.bracu.ac.bd/' },
         { name: 'CSE SDS', url: 'https://cse.sds.bracu.ac.bd/' },
         { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },

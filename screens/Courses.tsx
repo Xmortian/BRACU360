@@ -42,7 +42,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
     const theme = useTheme();
     const [deadlineName, setDeadlineName] = useState('');
     const [deadlineDate, setDeadlineDate] = useState(new Date());
-    const [reminderDays, setReminderDays] = useState(1);
+    const [reminderDays, setReminderDays] = useState(0);
     const [isDropdownVisible, setIsDropdownVisible] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
@@ -50,7 +50,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
     const [alertMessage, setAlertMessage] = useState('');
     const [alertTitle, setAlertTitle] = useState('');
 
-    const reminderOptions = [1, 2, 3, 4, 5, 6, 7];
+    const reminderOptions = [0, 1, 2, 3, 4, 5, 6, 7];
 
     const showAlert = (title, message) => {
         setAlertTitle(title);
@@ -134,7 +134,6 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
                             <DateTimePicker
                                 value={deadlineDate}
                                 mode="time"
-                                is24Hour={true}
                                 display="default"
                                 onChange={onTimeChange}
                             />
