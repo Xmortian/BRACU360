@@ -107,6 +107,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
                             value={deadlineName}
                             onChangeText={setDeadlineName}
                             style={styles.textInput}
+                            mode="outlined"
                         />
 
                         <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant, fontSize: 18, marginBottom: 10 }]}>Deadline Date & Time</Text>
@@ -184,7 +185,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
 const CameraModal = ({ visible, onClose, onPictureSaved }) => {
     const cameraRef = useRef(null);
     const [hasPermission, setHasPermission] = useState(null);
-    const theme = useTheme(); // Use theme for colors
+    const theme = useTheme();
 
     useEffect(() => {
         (async () => {
@@ -221,10 +222,8 @@ const CameraModal = ({ visible, onClose, onPictureSaved }) => {
             onRequestClose={onClose}
         >
             <View style={{ flex: 1 }}>
-                {/* Hardcoding type to 'back' to avoid Camera.Constants.Type issues */}
-                <CameraView style={{ flex: 1 }}  ref={cameraRef}>
+                <CameraView style={{ flex: 1 }} ref={cameraRef}>
                     <View style={{ flex: 1, backgroundColor: 'transparent', flexDirection: 'row' }}>
-                        {/* Empty view to allow camera content to show */}
                     </View>
                 </CameraView>
                 <View style={{ position: 'absolute', bottom: 20, width: '100%', alignItems: 'center' }}>
@@ -276,7 +275,6 @@ const NotesModal = ({ visible, onClose, notes, onRemoveNote }) => {
     );
 };
 
-
 // --- CoursesScreen Component ---
 const CoursesScreen = () => {
     const theme = useTheme();
@@ -291,6 +289,16 @@ const CoursesScreen = () => {
         { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-08-17T12:00:00.000Z', reminderDays: 7 }] },
         { id: '4', courseName: 'Object-Oriented Programming', notes: [], deadlines: [] },
     ]);
+    const [generalDeadlines, setGeneralDeadlines] = useState([]);
+    const [isGeneralDeadlineModalVisible, setIsGeneralDeadlineModalVisible] = useState(false);
+
+    const handleAddGeneralDeadline = (deadlineData) => {
+        setGeneralDeadlines(prevDeadlines => [...prevDeadlines, deadlineData]);
+    };
+    
+    const handleDeleteGeneralDeadline = (id) => {
+        setGeneralDeadlines(prevDeadlines => prevDeadlines.filter(deadline => deadline.id !== id));
+    };
 
     const handleAddDeadline = (courseId, deadlineData) => {
         setCourses(prevCourses => prevCourses.map(course =>
@@ -315,7 +323,6 @@ const CoursesScreen = () => {
         setIsNotesModalVisible(true);
     };
 
-    // Helper function to calculate time left
     const calculateTimeLeft = (deadlineDate) => {
         const now = new Date();
         const deadline = new Date(deadlineDate);
@@ -376,7 +383,38 @@ const CoursesScreen = () => {
                 data={courses}
                 renderItem={renderCourseItem}
                 keyExtractor={item => item.id}
-                contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
+                contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]} // Added paddingBottom
+                ListHeaderComponent={() => (
+                    <View>
+                        <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+                            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>General Deadlines</Text>
+                            <TouchableOpacity onPress={() => setIsGeneralDeadlineModalVisible(true)}>
+                                <Text style={[styles.addButton, { color: theme.colors.primary }]}>+ Add</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {generalDeadlines.length > 0 ? (
+                            <FlatList
+                                data={generalDeadlines}
+                                keyExtractor={item => item.id}
+                                renderItem={({ item }) => (
+                                    <View style={[styles.deadlineItem, { backgroundColor: theme.colors.surface, marginBottom: 10 }]}>
+                                        <View>
+                                            <Paragraph style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>{item.name}</Paragraph>
+                                            <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>{new Date(item.date).toDateString()}</Paragraph>
+                                        </View>
+                                        <TouchableOpacity onPress={() => handleDeleteGeneralDeadline(item.id)}>
+                                            <Trash size={24} color={theme.colors.error} />
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                                scrollEnabled={false}
+                            />
+                        ) : (
+                            <Text style={{ color: theme.colors.onSurfaceVariant, marginBottom: 20 }}>No general deadlines added.</Text>
+                        )}
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>My Courses</Text>
+                    </View>
+                )}
             />
 
             {/* Modals */}
@@ -397,7 +435,156 @@ const CoursesScreen = () => {
                 notes={selectedCourse?.notes || []}
                 onRemoveNote={handleRemoveNote}
             />
+
+            {/* New General Deadline Modal (copied from DeadlineModal) */}
+            <GeneralDeadlineModal
+                visible={isGeneralDeadlineModalVisible}
+                onClose={() => setIsGeneralDeadlineModalVisible(false)}
+                onAddDeadline={handleAddGeneralDeadline}
+            />
         </View>
+    );
+};
+
+const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
+    const theme = useTheme();
+    const [deadlineName, setDeadlineName] = useState('');
+    const [deadlineDate, setDeadlineDate] = useState(new Date());
+    const [reminderDays, setReminderDays] = useState(0);
+    const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+    const [alertModalVisible, setAlertModalVisible] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertTitle, setAlertTitle] = useState('');
+
+    const reminderOptions = [0, 1, 2, 3, 4, 5, 6, 7];
+
+    const showAlert = (title, message) => {
+        setAlertTitle(title);
+        setAlertMessage(message);
+        setAlertModalVisible(true);
+    };
+
+    const handleSave = () => {
+        if (!deadlineName) {
+            showAlert("Error", "Please enter a name for the deadline.");
+            return;
+        }
+        if (!deadlineDate) {
+            showAlert("Error", "Please select a deadline date.");
+            return;
+        }
+        onAddDeadline({ id: Math.random().toString(), name: deadlineName, date: deadlineDate.toISOString(), reminderDays });
+        
+        setDeadlineName('');
+        setDeadlineDate(new Date());
+        setReminderDays(1);
+        onClose();
+    };
+
+    const onDateConfirm = (params) => {
+        setShowDatePicker(false);
+        setDeadlineDate(params.date);
+    };
+
+    const onTimeChange = (event, selectedTime) => {
+        setShowTimePicker(Platform.OS === 'ios');
+        if (selectedTime) {
+            setDeadlineDate(selectedTime);
+        }
+    };
+    
+    return (
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={[styles.modalContainer, { backgroundColor: theme.colors.surface, height: 'auto' }]}>
+                    <View style={styles.modalHeader}>
+                        <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add General Deadline</Text>
+                        <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}><Text>Close</Text></PaperButton>
+                    </View>
+                    <ScrollView contentContainerStyle={{ paddingVertical: 10 }}>
+                        <TextInput
+                            label="Deadline Name (e.g. Internship Application)"
+                            value={deadlineName}
+                            onChangeText={setDeadlineName}
+                            style={styles.textInput}
+                            mode="outlined"
+                        />
+
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant, fontSize: 18, marginBottom: 10 }]}>Deadline Date & Time</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+                            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <Calendar size={24} color={theme.colors.onSurfaceVariant} style={{ marginRight: 10 }} />
+                                <Text style={{ fontSize: 16, color: theme.colors.onSurface }}>{deadlineDate ? deadlineDate.toDateString() : 'Select date'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setShowTimePicker(true)} style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <Text style={{ fontSize: 16, color: theme.colors.onSurface }}>{deadlineDate ? deadlineDate.toLocaleTimeString() : 'Select time'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        
+                        {showDatePicker && (
+                            <DatePickerModal
+                                locale="en"
+                                mode="single"
+                                visible={showDatePicker}
+                                onDismiss={() => setShowDatePicker(false)}
+                                date={deadlineDate}
+                                onConfirm={onDateConfirm}
+                            />
+                        )}
+                        {showTimePicker && (
+                            <DateTimePicker
+                                value={deadlineDate}
+                                mode="time"
+                                display="default"
+                                onChange={onTimeChange}
+                            />
+                        )}
+
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant, fontSize: 18, marginBottom: 10 }]}>Remind Me</Text>
+                        <TouchableOpacity onPress={() => setIsDropdownVisible(!isDropdownVisible)} style={[styles.dropdownButton, { borderColor: theme.colors.onSurfaceVariant }]}>
+                            <Text style={{ color: theme.colors.onSurface }}>{reminderDays} day(s) before</Text>
+                            <ChevronDown size={20} color={theme.colors.onSurfaceVariant} />
+                        </TouchableOpacity>
+                        
+                        {isDropdownVisible && (
+                            <View style={{ borderWidth: 1, borderColor: theme.colors.onSurfaceVariant, borderRadius: 8, marginTop: -15, marginBottom: 15 }}>
+                                {reminderOptions.map(day => (
+                                    <TouchableOpacity
+                                        key={day}
+                                        onPress={() => { setReminderDays(day); setIsDropdownVisible(false); }}
+                                        style={[styles.dropdownItem, { backgroundColor: reminderDays === day ? theme.colors.primaryContainer : 'transparent' }]}
+                                    >
+                                        <Text style={{ color: reminderDays === day ? theme.colors.onPrimaryContainer : theme.colors.onSurface }}>{day} day(s) before</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                    </ScrollView>
+                    
+                    <PaperButton
+                        mode="contained"
+                        onPress={handleSave}
+                        style={{ marginTop: 20, backgroundColor: theme.colors.primary }}
+                        labelStyle={{ color: theme.colors.onPrimary }}
+                    >
+                        <Text>Save Deadline</Text>
+                    </PaperButton>
+                </View>
+            </View>
+            <CustomAlertModal
+                visible={alertModalVisible}
+                onClose={() => setAlertModalVisible(false)}
+                title={alertTitle}
+                message={alertMessage}
+            />
+        </Modal>
     );
 };
 

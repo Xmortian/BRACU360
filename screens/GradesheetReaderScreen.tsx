@@ -68,8 +68,8 @@ const GradesheetScannerScreen = ({ navigation }) => {
 
         } catch (error) {
             console.error('Error performing OCR:', error);
-            showError(`Failed to perform OCR on images: ${error.message}`);
-            setRawText(`OCR failed with error: ${error.message}`);
+            showError("Failed to perform OCR on images: ${error.message}");
+            setRawText("OCR failed with error: ${error.message}");
         } finally {
             setLoading(false);
         }

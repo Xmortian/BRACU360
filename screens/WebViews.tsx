@@ -4,10 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import { Appbar, Card, Title, Paragraph, useTheme } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
 import { ArrowLeft, Bell } from 'lucide-react-native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack'; // Import createNativeStackNavigator
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styles from '../styles/styles';
 
-// Create a Stack Navigator instance for this file
 const Stack = createNativeStackNavigator();
 
 // --- Webview Detail Screen (opens a specific website) ---
@@ -36,7 +35,7 @@ function WebviewDetailScreen({ route }) {
                 onError={(syntheticEvent) => {
                     const { nativeEvent } = syntheticEvent;
                     Alert.alert("Webview Error", `Failed to load: ${nativeEvent.description}`);
-                    navigation.goBack(); // Go back on error
+                    navigation.goBack();
                 }}
             />
         </SafeAreaView>
@@ -51,7 +50,6 @@ function WebviewListScreen() {
     const websites = [
         { name: 'PrePre-Reg', url: 'https://preprereg.vercel.app/' },
         { name: 'Connect Unlocked', url: 'https://usis.eniamza.com/n' },
-
         { name: 'BRACU Official', url: 'https://www.bracu.ac.bd/' },
         { name: 'CSE SDS', url: 'https://cse.sds.bracu.ac.bd/' },
         { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },
@@ -64,7 +62,7 @@ function WebviewListScreen() {
             <Appbar.Header style={styles.appBar}>
                 <Appbar.Content title="Web Links" titleStyle={styles.appBarTitle} />
             </Appbar.Header>
-            <ScrollView style={styles.paddingContainer}>
+            <ScrollView contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
                     Quick Access Webviews
                 </Text>
