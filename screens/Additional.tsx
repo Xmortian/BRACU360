@@ -3,11 +3,14 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, StatusBar, FlatList, T
 import { Appbar, Card, Title, Paragraph, useTheme, Button as PaperButton } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
 import styles from '../styles/styles';
+// You need to import the QrScannerModal component
+import QrScannerModal from './QrScannerModal';
 
 const AdditionalScreen = () => {
     const theme = useTheme();
     const [showClubs, setShowClubs] = useState(false);
     const [showBusSchedule, setShowBusSchedule] = useState(false);
+    const [isQrModalVisible, setIsQrModalVisible] = useState(false); // Add state for QR modal
 
     // Feedback form state
     const [feedbackName, setFeedbackName] = useState('');
@@ -54,6 +57,12 @@ const AdditionalScreen = () => {
             </Text>
         </TouchableOpacity>
     );
+    
+    // Function to handle QR code data
+    const handleQrCodeScanned = (data) => {
+        setIsQrModalVisible(false); // Close the modal after scanning
+        Alert.alert('QR Code Scanned', `Data: ${data}`);
+    };
 
     // Handle feedback form submission
     const handleFeedbackSubmit = async () => {
@@ -106,7 +115,7 @@ const AdditionalScreen = () => {
             <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
                 <Appbar.Content title="Additional" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
                 <TouchableOpacity
-                    onPress={() => Alert.alert('Feature Coming Soon', 'QR Code Scanner')}
+                    onPress={() => setIsQrModalVisible(true)} // Open the QR scanner modal
                     style={[styles.appBarRightAction, { backgroundColor: theme.colors.primary }]}
                 >
                     <Text style={[styles.appBarActionText, { color: theme.colors.onPrimary }]}>QR Scanner</Text>
@@ -149,7 +158,6 @@ const AdditionalScreen = () => {
                     </View>
                 )}
 
-                {/* Feedback Form */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>
                     Feedback
                 </Text>
@@ -161,7 +169,7 @@ const AdditionalScreen = () => {
                         </Paragraph>
 
                         <TextInput
-                            placeholder="ID(Optional)"
+                            placeholder="ID (Optional)"
                             value={feedbackName}
                             onChangeText={setFeedbackName}
                             style={{ backgroundColor: '#fff', padding: 10, borderRadius: 8, marginBottom: 10 }}
@@ -186,6 +194,13 @@ const AdditionalScreen = () => {
                     </Card.Content>
                 </Card>
             </ScrollView>
+            
+            {/* The QR Scanner Modal must be inside the main View */}
+            <QrScannerModal
+                visible={isQrModalVisible}
+                onClose={() => setIsQrModalVisible(false)}
+                onQrCodeScanned={handleQrCodeScanned}
+            />
         </View>
     );
 };
