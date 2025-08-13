@@ -27,7 +27,7 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
         setFriendName('');
         setFriendCourses('');
         setFriendStatus('');
-        setFriendContact(''); // Clear the contact state
+        setFriendContact(''); 
         onClose();
     };
 

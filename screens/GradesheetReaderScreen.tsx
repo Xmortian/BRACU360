@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Image, Tou
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import { ChevronLeft, Bell, ScanText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import ImageCropPicker from 'react-native-image-crop-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import styles from '../styles/styles';
 
@@ -14,6 +15,10 @@ const GradesheetScannerScreen = ({ navigation }) => {
     const [gradesheetData, setGradesheetData] = useState([]);
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [croppingImageUri, setCroppingImageUri] = useState(null);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [croppedUris, setCroppedUris] = useState([]);
+    const [currentPage, setCurrentPage] = useState(0);
 
     const showError = (message) => {
         setErrorMessage(message);
@@ -29,22 +34,61 @@ const GradesheetScannerScreen = ({ navigation }) => {
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, // Reverted line
                 allowsMultipleSelection: true,
                 selectionLimit: 7,
                 quality: 1,
             });
 
             if (!result.canceled && result.assets) {
-                const uris = result.assets.map(asset => asset.uri);
-                setImageUris(uris);
-                setRawText(null);
-                setGradesheetData([]);
-                await performOcrOnImages(uris);
+                // Store original assets to loop through for cropping
+                setSelectedImages(result.assets);
+                setCroppedUris([]);
+                setCurrentPage(0);
+                if (result.assets.length > 0) {
+                    cropNextImage(result.assets, []);
+                }
             }
         } catch (error) {
             console.error('Error picking images:', error);
             showError('Failed to pick images. Please try again.');
+        }
+    };
+
+    const cropNextImage = async (imagesToCrop, uris) => {
+        if (imagesToCrop.length === 0) {
+            // All images are cropped, set the final URIs
+            setImageUris(uris);
+            setRawText(null);
+            setGradesheetData([]);
+            return;
+        }
+
+        const currentImage = imagesToCrop[0];
+        try {
+            const cropped = await ImageCropPicker.openCropper({
+                path: currentImage.uri,
+                width: 0,  // Setting width and height to 0 often defaults to the full image size.
+                height: 0, // This allows the user to select the entire image if needed.
+                cropping: true,
+                freeStyleCropEnabled: true, // Enables a customizable crop box
+                cropperToolbarTitle: `Page ${currentPage + 1} of ${selectedImages.length}`,
+            });
+
+            const newUris = [...uris, cropped.path];
+            setCroppedUris(newUris);
+            setCurrentPage(currentPage + 1);
+
+            // Recursively call for the next image in the queue
+            cropNextImage(imagesToCrop.slice(1), newUris);
+
+        } catch (error) {
+            // User cancelled cropping, so we stop the process
+            console.log('Cropping cancelled or failed:', error);
+            setImageUris(uris); // Set images cropped so far
+            setCroppedUris(uris);
+            setRawText(null);
+            setGradesheetData([]);
         }
     };
 
@@ -68,11 +112,19 @@ const GradesheetScannerScreen = ({ navigation }) => {
 
         } catch (error) {
             console.error('Error performing OCR:', error);
-            showError("Failed to perform OCR on images: ${error.message}");
-            setRawText("OCR failed with error: ${error.message}");
+            showError(`Failed to perform OCR on images: ${error.message}`);
+            setRawText(`OCR failed with error: ${error.message}`);
         } finally {
             setLoading(false);
         }
+    };
+    
+    const handleDone = async () => {
+        if (imageUris.length === 0) {
+            showError('Please select and crop at least one image.');
+            return;
+        }
+        await performOcrOnImages(imageUris);
     };
     
     /**
@@ -148,7 +200,7 @@ const GradesheetScannerScreen = ({ navigation }) => {
                                 labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
                                 icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
                             >
-                                {loading ? "Scanning..." : "Pick Images from Gallery"}
+                                Pick Images from Gallery
                             </PaperButton>
                         </View>
 
@@ -160,6 +212,18 @@ const GradesheetScannerScreen = ({ navigation }) => {
                                     ))}
                                 </ScrollView>
                             </View>
+                        )}
+                        
+                        {imageUris.length > 0 && (
+                          <PaperButton
+                            mode="contained"
+                            onPress={handleDone}
+                            disabled={loading}
+                            style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
+                            labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
+                          >
+                            {loading ? "Scanning..." : "Done"}
+                          </PaperButton>
                         )}
 
                         {loading && (

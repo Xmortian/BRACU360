@@ -3,7 +3,6 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, StatusBar, FlatList, T
 import { Appbar, Card, Title, Paragraph, useTheme, Button as PaperButton } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
 import styles from '../styles/styles';
-// You need to import the QrScannerModal component
 import QrScannerModal from './QrScannerModal';
 
 const AdditionalScreen = () => {
