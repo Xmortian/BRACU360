@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, StatusBar, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import {
     ChevronLeft,
-    Bell,
     ScanText,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import styles from '../styles/styles';
 
-const OcrScannerScreen = () => {
+const { width } = Dimensions.get('window');
+
+const OcrScannerScreen = ({ navigation }) => {
     const theme = useTheme();
     const [imageUri, setImageUri] = useState(null);
     const [rawText, setRawText] = useState(null);
@@ -120,6 +121,7 @@ const OcrScannerScreen = () => {
                             const distance = Math.abs(block.frame.left - dayHeaders[day]);
                             if (distance < minDistance) {
                                 minDistance = distance;
+                                minDistance = distance;
                                 closestDay = day;
                             }
                         }
@@ -155,32 +157,52 @@ const OcrScannerScreen = () => {
                     onPress={() => console.log('Navigate back')}
                 />
                 <Appbar.Content title="Course Details OCR" titleStyle={styles.appBarTitle} />
-                <Appbar.Action
-                    icon={() => <Bell size={24} color={theme.colors.onPrimary} />}
-                    onPress={() => console.log('Show notifications')}
-                />
             </Appbar.Header>
 
             <ScrollView contentContainerStyle={styles.paddingContainer}>
+                {/* Routine GIF and Instructions Section */}
+                <Card style={[styles.mainCard, { marginBottom: 20 }]}>
+                    <Card.Content style={{ alignItems: 'center', backgroundColor: '#000000', borderRadius: 10 }}>
+                        <Image
+                            source={require('../assets/routine.gif')}
+                            style={{ width: '100%', height: 200, resizeMode: 'contain', marginBottom: 10 }}
+                        />
+                        <Title style={[styles.cardTitle, { color: '#ffffff' }]}>
+                            Class Routine Upload
+                        </Title>
+                        <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                            Step 1: Log in to Connect.
+                        </Paragraph>
+                        <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                            Step 2: Take a screenshot of your class routine.
+                        </Paragraph>
+                        <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                            Step 3: Upload the screenshot!
+                        </Paragraph>
+                    </Card.Content>
+                </Card>
+
                 <Card style={styles.mainCard}>
                     <Card.Content>
-                        <View style={styles.scanContainer}>
-                            <Title style={[styles.cardTitle, { color: theme.colors.onSurface }]}>
-                                Class Schedule Extractor
-                            </Title>
-                            <Paragraph style={[styles.cardParagraph, { color: theme.colors.onSurfaceVariant }]}>
-                                Pick an image of your class schedule to extract the details.
-                            </Paragraph>
-                            
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
                             <PaperButton
                                 mode="contained"
                                 onPress={pickImage}
                                 disabled={loading}
-                                style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
+                                style={{ flex: 1, backgroundColor: theme.colors.primary }}
                                 labelStyle={styles.scanButtonLabel}
                                 icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
                             >
-                                {loading ? "Recognizing..." : "Pick Image from Gallery"}
+                                {loading ? "Recognizing..." : "Upload Screenshot"}
+                            </PaperButton>
+                            <PaperButton
+                                mode="outlined"
+                                onPress={() => console.log('Manual Input pressed')}
+                                disabled={loading}
+                                style={{ flex: 1, borderColor: theme.colors.primary }}
+                                labelStyle={[styles.scanButtonLabel, { color: theme.colors.primary }]}
+                            >
+                                Manual Input
                             </PaperButton>
                         </View>
 
