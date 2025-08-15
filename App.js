@@ -3,33 +3,27 @@ import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Appbar, DefaultTheme, Provider as PaperProvider, useTheme } from 'react-native-paper';
-import OcrScannerScreen from './screens/OcrScanner';
-import GradesheetReaderScreen from './screens/GradesheetReaderScreen.tsx';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
     Globe,
     PlusCircle,
-    Calculator,
     Calendar,
     BookOpen,
-    Users,
-    User,
-    Home
+    Users
 } from 'lucide-react-native';
 
 // Import all screen components from your screens folder
 import HomeScreen from './screens/HomeScreen';
 import CoursesScreen from './screens/Courses';
-import ProfileScreen from './screens/Profile';
 import FriendsScreen from './screens/Friends';
-import CgpaCalcScreen from './screens/CgpaCalc';
 import AdditionalScreen from './screens/Additional';
 import WebViewsScreen from './screens/WebViews';
 
 // Import the centralized styles file
 import styles from './styles/styles';
+import ProfileScreen from './screens/Profile';
 
 const Tab = createBottomTabNavigator();
 
@@ -92,9 +86,6 @@ export default function App() {
                                         case 'AdditionalTab':
                                             iconComponent = <PlusCircle color={color} size={size} />;
                                             break;
-                                        case 'CGPATab':
-                                            iconComponent = <Calculator color={color} size={size} />;
-                                            break;
                                         case 'RoutineTab':
                                             iconComponent = <Calendar color={color} size={size} />;
                                             break;
@@ -105,29 +96,23 @@ export default function App() {
                                             iconComponent = <Users color={color} size={size} />;
                                             break;
                                         case 'ProfileTab':
-                                            iconComponent = <User color={color} size={size} />;
+                                            iconComponent = <profile color={color} size={size} />;
                                             break;
-                                        case 'OcrScannerScreen':
-                                            iconComponent = <User color={color} size={size} />;
-                                            break;
-                                        case 'GradesheetReaderScreen':
-                                            iconComponent = <User color={color} size={size} />;
                                         default:
-                                            iconComponent = <Home color={color} size={size} />;
+                                            // Fallback icon, though it shouldn't be reached
+                                            iconComponent = <Calendar color={color} size={size} />;
                                     }
                                     return iconComponent;
                                 },
                             })}
                         >
                             <Tab.Screen name="WebviewTab" component={WebViewsScreen} options={{ tabBarLabel: 'Web' }} />
-                            <Tab.Screen name="AdditionalTab" component={AdditionalScreen} options={{ tabBarLabel: 'Add' }} />
-                            <Tab.Screen name="CGPATab" component={CgpaCalcScreen} options={{ tabBarLabel: 'CGPA' }} />
+                            <Tab.Screen name="AdditionalTab" component={AdditionalScreen} options={{ tabBarLabel: 'Additional' }} />
                             <Tab.Screen name="RoutineTab" component={HomeScreen} options={{ tabBarLabel: 'Routine' }} />
-                            <Tab.Screen name="CoursesTab" component={CoursesScreen} options={{ tabBarLabel: 'Courses' }} />
+                            <Tab.Screen name="CoursesTab" component={CoursesScreen} options={{ tabBarLabel: 'Course' }} />
                             <Tab.Screen name="FriendFinderTab" component={FriendsScreen} options={{ tabBarLabel: 'Friends' }} />
-                            <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
-                            <Tab.Screen name="OcrScannerScreen" component={OcrScannerScreen} options={{ tabBarLabel: 'OCR' }} />
-                            <Tab.Screen name="GradesheetReaderScreen" component={GradesheetReaderScreen} options={{ tabBarLabel: 'OCR2' }} />
+                            <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+
                         </Tab.Navigator>
                     </PaperProvider>
                 </NavigationContainer>

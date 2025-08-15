@@ -7,7 +7,9 @@ import ImageViewer from 'react-native-image-zoom-viewer';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 
-
+// Import the OCR Scanner Modal
+import OcrScannerModal from './OcrScanner';
+// Import the ProfileScreen component
 import {
     ChevronLeft,
     ChevronRight,
@@ -15,16 +17,16 @@ import {
     ClipboardList,
     Bell,
     MapPin,
-    User2,
+    User,
+    PlusCircle,
 } from 'lucide-react-native';
-
 
 function YearPlannerModal({ visible, onClose }) {
     const images = [
         {
             url: '',
             width: 7240,
-            o0height: 4640, 
+            o0height: 4640,
             props: {
                 source: require('../assets/year_planner.png'),
             },
@@ -65,11 +67,9 @@ function YearPlannerModal({ visible, onClose }) {
     );
 }
 
-
 function RoutineOverviewModal({ visible, onClose }) {
     const theme = useTheme();
-    const routineOverviewContent = ` ADD Your Routine
-  `;
+    const routineOverviewContent = ` ADD Your Routine `;
 
     return (
         <Modal
@@ -96,11 +96,12 @@ function RoutineOverviewModal({ visible, onClose }) {
 }
 
 // --- HomeScreen Component ---
-const HomeScreen = () => {
+const HomeScreen = () => { // 👈 Removed navigation prop
     const theme = useTheme();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isYearPlannerVisible, setIsYearPlannerVisible] = useState(false);
     const [isRoutineOverviewVisible, setIsRoutineOverviewVisible] = useState(false);
+    const [isOcrModalVisible, setIsOcrModalVisible] = useState(false);
 
     const routineData = [
         { id: '1', timeStart: '9:30', timeEnd: '11:00', course: 'Computer Science', room: '9G-32C', faculty: 'KSD', color: '#A7F3D0' },
@@ -161,18 +162,28 @@ const HomeScreen = () => {
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
             <Appbar.Header style={styles.appBar}>
-                {/* Year Planner Button */}
+                {/* Left side actions */}
                 <Appbar.Action
                     icon={() => <BookText size={24} color={theme.colors.onPrimary} />}
                     onPress={() => setIsYearPlannerVisible(true)}
                 />
-                {/* Routine Overview Button */}
                 <Appbar.Action
                     icon={() => <ClipboardList size={24} color={theme.colors.onPrimary} />}
                     onPress={() => setIsRoutineOverviewVisible(true)}
                 />
+
                 <Appbar.Content title="Schedule" titleStyle={styles.appBarTitle} />
-                <Appbar.Action icon={() => <Bell size={24} color={theme.colors.onPrimary} />} onPress={() => Alert.alert('Notifications', 'Coming Soon!')} />
+
+                {/* Right side actions */}
+                <Appbar.Action
+                    icon={() => <Bell size={24} color={theme.colors.onPrimary} />}
+                    onPress={() => Alert.alert('Notifications', 'Coming Soon!')}
+                />
+                <Appbar.Action
+                    icon={() => <PlusCircle size={24} color={'#50E3C2'} />}
+                    onPress={() => setIsOcrModalVisible(true)}
+                />
+
             </Appbar.Header>
 
             <View style={styles.routineHeader}>
@@ -209,7 +220,7 @@ const HomeScreen = () => {
                                         <Text style={styles.classInfoText}>{item.room}</Text>
                                     </View>
                                     <View style={styles.classInfoRow}>
-                                        <User2 size={16} color="#444" />
+                                        <User size={16} color="#444" />
                                         <Text style={styles.classInfoText}>{item.faculty}</Text>
                                     </View>
                                 </View>
@@ -231,6 +242,11 @@ const HomeScreen = () => {
                 visible={isRoutineOverviewVisible}
                 onClose={() => setIsRoutineOverviewVisible(false)}
             />
+            <OcrScannerModal
+                visible={isOcrModalVisible}
+                onClose={() => setIsOcrModalVisible(false)}
+            />
+
         </View>
     );
 };

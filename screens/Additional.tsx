@@ -4,12 +4,13 @@ import { Appbar, Card, Title, Paragraph, useTheme, Button as PaperButton } from 
 import { WebView } from 'react-native-webview';
 import styles from '../styles/styles';
 import QrScannerModal from './QrScannerModal';
+import { QrCode } from 'lucide-react-native'; // Import the QrCode icon
 
 const AdditionalScreen = () => {
     const theme = useTheme();
     const [showClubs, setShowClubs] = useState(false);
     const [showBusSchedule, setShowBusSchedule] = useState(false);
-    const [isQrModalVisible, setIsQrModalVisible] = useState(false); // Add state for QR modal
+    const [isQrModalVisible, setIsQrModalVisible] = useState(false); // State for QR modal
 
     // Feedback form state
     const [feedbackName, setFeedbackName] = useState('');
@@ -56,7 +57,7 @@ const AdditionalScreen = () => {
             </Text>
         </TouchableOpacity>
     );
-    
+
     // Function to handle QR code data
     const handleQrCodeScanned = (data) => {
         setIsQrModalVisible(false); // Close the modal after scanning
@@ -113,12 +114,11 @@ const AdditionalScreen = () => {
             <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
             <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
                 <Appbar.Content title="Additional" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
-                <TouchableOpacity
-                    onPress={() => setIsQrModalVisible(true)} // Open the QR scanner modal
-                    style={[styles.appBarRightAction, { backgroundColor: theme.colors.primary }]}
-                >
-                    <Text style={[styles.appBarActionText, { color: theme.colors.onPrimary }]}>QR Scanner</Text>
-                </TouchableOpacity>
+                {/* QR Scanner button with QrCode icon */}
+                <Appbar.Action
+                    icon={() => <QrCode size={24} color={theme.colors.onPrimary} />}
+                    onPress={() => setIsQrModalVisible(true)}
+                />
             </Appbar.Header>
 
             <ScrollView contentContainerStyle={styles.paddingContainer}>
@@ -193,7 +193,7 @@ const AdditionalScreen = () => {
                     </Card.Content>
                 </Card>
             </ScrollView>
-            
+
             {/* The QR Scanner Modal must be inside the main View */}
             <QrScannerModal
                 visible={isQrModalVisible}

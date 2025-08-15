@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, FlatList } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, FlatList, Modal, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import { Plus, Edit, Trash } from 'lucide-react-native';
 import styles from '../styles/styles';
 
-const CgpaCalcScreen = () => {
+const CgpaCalcModal = ({ visible, onClose }) => {
     const theme = useTheme();
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
@@ -78,7 +78,6 @@ const CgpaCalcScreen = () => {
                     <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>CGPA with 10 A's: <Text style={{ fontWeight: 'bold' }}>{calculateCGPAwithTenAs()}</Text></Paragraph>
                     <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>CGPA with 10 A-'s: <Text style={{ fontWeight: 'bold' }}>{calculateCGPAwithTenAs()}</Text></Paragraph>
                     <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>CGPA with 5 A's & 5 A-'s': <Text style={{ fontWeight: 'bold' }}>{calculateCGPAwithTenAs()}</Text></Paragraph>
-
                 </Card.Content>
             </Card>
 
@@ -97,24 +96,51 @@ const CgpaCalcScreen = () => {
     );
 
     return (
-        <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Content title="CGPA Calculator" titleStyle={styles.appBarTitle} />
-                <Appbar.Action 
-                    icon={() => <Plus size={24} color={theme.colors.onPrimary} />} 
-                    onPress={() => Alert.alert('Upload Gradesheet', 'This is a placeholder for PDF gradesheet OCR.')}
-                />
-            </Appbar.Header>
-
-            <FlatList
-                data={showAdvancedSettings ? dummyGrades : []}
-                renderItem={renderCourseCard}
-                keyExtractor={item => item.id}
-                ListHeaderComponent={renderHeader}
-                contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
-            />
-        </View>
+        <Modal
+            visible={visible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={onClose}
+        >
+            <View style={[modalStyles.modalOverlay]}>
+                <View style={[modalStyles.modalContainer, { backgroundColor: theme.colors.background }]}>
+                    <Appbar.Header style={[styles.appBar, { backgroundColor: 'transparent', elevation: 0 }]}>
+                        <Appbar.Content title="CGPA Calculator" titleStyle={styles.appBarTitle} />
+                        <PaperButton 
+                            icon="close" 
+                            onPress={onClose} 
+                            mode="text" 
+                            labelStyle={{ color: theme.colors.primary }}
+                        >
+                            Close
+                        </PaperButton>
+                    </Appbar.Header>
+                    <FlatList
+                        data={showAdvancedSettings ? dummyGrades : []}
+                        renderItem={renderCourseCard}
+                        keyExtractor={item => item.id}
+                        ListHeaderComponent={renderHeader}
+                        contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
+                    />
+                </View>
+            </View>
+        </Modal>
     );
 };
 
-export default CgpaCalcScreen;
+// New styles for the modal overlay and container
+const modalStyles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+    },
+});
+
+export default CgpaCalcModal;

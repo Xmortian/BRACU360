@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Image, TouchableOpacity, Alert, FlatList, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import { ChevronLeft, Bell, ScanText } from 'lucide-react-native';
+import { Plus, Edit, Trash, Bell, ChevronLeft, ScanText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import styles from '../styles/styles';
 
-const GradesheetScannerScreen = ({ navigation }) => {
+const GradesheetScannerModal = ({ visible, onClose }) => {
     const theme = useTheme();
     const [imageUris, setImageUris] = useState([]);
     const [rawText, setRawText] = useState(null);
@@ -15,11 +15,9 @@ const GradesheetScannerScreen = ({ navigation }) => {
     const [gradesheetData, setGradesheetData] = useState([]);
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [croppingImageUri, setCroppingImageUri] = useState(null);
-    const [selectedImages, setSelectedImages] = useState([]);
-    const [croppedUris, setCroppedUris] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
-
+    const [selectedImages, setSelectedImages] = useState([]); // This state is now the source of truth for total images
+    
+    // showError function remains the same
     const showError = (message) => {
         setErrorMessage(message);
         setErrorModalVisible(true);
@@ -34,19 +32,18 @@ const GradesheetScannerScreen = ({ navigation }) => {
             }
 
             const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images, // Reverted line
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsMultipleSelection: true,
                 selectionLimit: 7,
                 quality: 1,
             });
 
             if (!result.canceled && result.assets) {
-                // Store original assets to loop through for cropping
+                // Set selectedImages and then immediately start the cropping process
                 setSelectedImages(result.assets);
-                setCroppedUris([]);
-                setCurrentPage(0);
+                setImageUris([]);
                 if (result.assets.length > 0) {
-                    cropNextImage(result.assets, []);
+                    cropNextImage(result.assets, 0, result.assets.length, []);
                 }
             }
         } catch (error) {
@@ -55,9 +52,9 @@ const GradesheetScannerScreen = ({ navigation }) => {
         }
     };
 
-    const cropNextImage = async (imagesToCrop, uris) => {
+    // Updated cropNextImage to pass index and total count
+    const cropNextImage = async (imagesToCrop, currentImageIndex, totalImages, uris) => {
         if (imagesToCrop.length === 0) {
-            // All images are cropped, set the final URIs
             setImageUris(uris);
             setRawText(null);
             setGradesheetData([]);
@@ -68,30 +65,24 @@ const GradesheetScannerScreen = ({ navigation }) => {
         try {
             const cropped = await ImageCropPicker.openCropper({
                 path: currentImage.uri,
-                width: 0,  // Setting width and height to 0 often defaults to the full image size.
-                height: 0, // This allows the user to select the entire image if needed.
+                width: 0,
+                height: 0,
                 cropping: true,
-                freeStyleCropEnabled: true, // Enables a customizable crop box
-                cropperToolbarTitle: `Page ${currentPage + 1} of ${selectedImages.length}`,
-            });g
+                freeStyleCropEnabled: true,
+                cropperToolbarTitle: `Page ${currentImageIndex + 1} of ${totalImages}`, // 👈 Fixed counter logic
+            });
 
             const newUris = [...uris, cropped.path];
-            setCroppedUris(newUris);
-            setCurrentPage(currentPage + 1);
-
-            // Recursively call for the next image in the queue
-            cropNextImage(imagesToCrop.slice(1), newUris);
-
+            cropNextImage(imagesToCrop.slice(1), currentImageIndex + 1, totalImages, newUris);
         } catch (error) {
-            // User cancelled cropping, so we stop the process
             console.log('Cropping cancelled or failed:', error);
-            setImageUris(uris); // Set images cropped so far
-            setCroppedUris(uris);
+            setImageUris(uris);
             setRawText(null);
             setGradesheetData([]);
         }
     };
-
+    
+    // performOcrOnImages and handleDone remain the same
     const performOcrOnImages = async (uris) => {
         setLoading(true);
         setRawText(null);
@@ -127,19 +118,14 @@ const GradesheetScannerScreen = ({ navigation }) => {
         await performOcrOnImages(imageUris);
     };
     
-    /**
-     * Parses the raw text to extract structured gradesheet data into a table format.
-     * @param {string} fullText - The full text content from the OCR.
-     */
+    // parseGradesheetData remains the same
     const parseGradesheetData = (fullText) => {
         if (!fullText) return [];
         const lines = fullText.split('\n');
         const data = [];
         let currentCourse = null;
 
-        // Regex to find Course Title and Code
         const courseRegex = /(Course|Subject):?\s*(.*?)\s*\((.*?)\)/i;
-        // Regex to find grades
         const gradeRegex = /Midterm:\s*(\d+(\.\d+)?)\s*Final:\s*(\d+(\.\d+)?)\s*Grade:\s*([A-Z-][+])?/i;
         
         lines.forEach(line => {
@@ -159,7 +145,7 @@ const GradesheetScannerScreen = ({ navigation }) => {
                 currentCourse.final = gradeMatch[3] || '-';
                 currentCourse.grade = gradeMatch[5] || '-';
                 data.push(currentCourse);
-                currentCourse = null; // Reset for the next course
+                currentCourse = null;
             }
         });
         
@@ -167,139 +153,152 @@ const GradesheetScannerScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
-            <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
-                <Appbar.Action
-                    icon={() => <ChevronLeft size={24} color={theme.colors.onPrimary} />}
-                    onPress={() => navigation.goBack()}
-                />
-                <Appbar.Content title="Gradesheet Scanner" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
-                <Appbar.Action
-                    icon={() => <Bell size={24} color={theme.colors.onPrimary} />}
-                    onPress={() => console.log('Show notifications')}
-                />
-            </Appbar.Header>
+        <Modal
+            visible={visible}
+            animationType="slide"
+            onRequestClose={onClose}
+        >
+            <View style={[modalStyles.modalContainer, { backgroundColor: theme.colors.background }]}>
+                <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+                <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
+                    <Appbar.Action
+                        icon={() => <ChevronLeft size={24} color={theme.colors.onPrimary} />}
+                        onPress={onClose}
+                    />
+                    <Appbar.Content title="Gradesheet Scanner" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
+                    {/* The notification icon has been removed as requested. */}
+                </Appbar.Header>
 
-            <ScrollView contentContainerStyle={styles.paddingContainer}>
-                <Card style={styles.mainCard}>
-                    <Card.Content>
-                        <View style={styles.scanContainer}>
-                            <Title style={[styles.cardTitle, { color: theme.colors.onSurface }]}>
-                                Gradesheet Scanner
-                            </Title>
-                            <Paragraph style={[styles.cardParagraph, { color: theme.colors.onSurfaceVariant }]}>
-                                Pick up to 7 photos of your gradesheet to extract the details.
-                            </Paragraph>
+                <ScrollView contentContainerStyle={styles.paddingContainer}>
+                    <Card style={styles.mainCard}>
+                        <Card.Content>
+                            <View style={styles.scanContainer}>
+                                <Title style={[styles.cardTitle, { color: theme.colors.onSurface }]}>
+                                    Gradesheet Scanner
+                                </Title>
+                                <Paragraph style={[styles.cardParagraph, { color: theme.colors.onSurfaceVariant }]}>
+                                    Pick up to 7 photos of your gradesheet to extract the details.
+                                </Paragraph>
 
+                                <PaperButton
+                                    mode="contained"
+                                    onPress={pickImages}
+                                    disabled={loading}
+                                    style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
+                                    labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
+                                    icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
+                                >
+                                    Pick Images from Gallery
+                                </PaperButton>
+                            </View>
+
+                            {imageUris.length > 0 && (
+                                <View style={[styles.imagePreviewContainer, { borderColor: theme.colors.outlineVariant }]}>
+                                    <ScrollView horizontal contentContainerStyle={styles.imagePreviewScroll} showsHorizontalScrollIndicator={false}>
+                                        {imageUris.map((uri, index) => (
+                                            <Image key={index} source={{ uri }} style={styles.imagePreview} resizeMode="cover" />
+                                        ))}
+                                    </ScrollView>
+                                </View>
+                            )}
+                            
+                            {imageUris.length > 0 && (
+                                <PaperButton
+                                    mode="contained"
+                                    onPress={handleDone}
+                                    disabled={loading}
+                                    style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
+                                    labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
+                                >
+                                    {loading ? "Scanning..." : "Done"}
+                                </PaperButton>
+                            )}
+
+                            {loading && (
+                                <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
+                                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                                    <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Scanning {imageUris.length} images...</Text>
+                                </View>
+                            )}
+
+                            {!loading && (
+                                <View style={styles.resultsContainer}>
+                                    {gradesheetData.length > 0 && (
+                                        <View style={styles.parsedSection}>
+                                            <Title style={[styles.ocrSectionTitle, { color: theme.colors.onSurface }]}>Parsed Gradesheet Data</Title>
+                                            <View style={[styles.tableContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+                                                <View style={[styles.tableHeader, { backgroundColor: theme.colors.background }]}>
+                                                    <Text style={[styles.courseColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Course</Text>
+                                                    <Text style={[styles.gradeColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Midterm</Text>
+                                                    <Text style={[styles.gradeColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Final</Text>
+                                                    <Text style={[styles.gradeColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Grade</Text>
+                                                </View>
+                                                <ScrollView>
+                                                    {gradesheetData.map((item, index) => (
+                                                        <View key={index} style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
+                                                            <Text style={[styles.courseColumn, { color: theme.colors.onSurface }]}>{item.courseTitle} ({item.courseCode})</Text>
+                                                            <Text style={[styles.gradeColumn, { color: theme.colors.onSurface }]}>{item.midterm}</Text>
+                                                            <Text style={[styles.gradeColumn, { color: theme.colors.onSurface }]}>{item.final}</Text>
+                                                            <Text style={[styles.gradeColumn, { color: theme.colors.onSurface }]}>{item.grade}</Text>
+                                                        </View>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        </View>
+                                    )}
+                                    {rawText && (
+                                        <View style={styles.rawSection}>
+                                            <Title style={[styles.ocrSectionTitle, { color: theme.colors.onSurface }]}>Raw OCR Text</Title>
+                                            <View style={[styles.rawTextContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
+                                                <Text style={[styles.rawTextOutput, { color: theme.colors.onSurface }]}>{rawText}</Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                    {imageUris.length > 0 && gradesheetData.length === 0 && rawText && (
+                                        <Text style={[styles.noResultsText, { color: theme.colors.onSurfaceVariant }]}>
+                                            No gradesheet data was found in the images.
+                                        </Text>
+                                    )}
+                                </View>
+                            )}
+                        </Card.Content>
+                    </Card>
+                </ScrollView>
+
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={errorModalVisible}
+                    onRequestClose={() => setErrorModalVisible(false)}
+                >
+                    <View style={styles.centeredView}>
+                        <View style={[styles.modalView, { backgroundColor: theme.colors.surface, borderColor: theme.colors.error }]}>
+                            <Text style={[styles.modalTitle, { color: theme.colors.error }]}>Error</Text>
+                            <Text style={[styles.modalText, { color: theme.colors.onSurface }]}>{errorMessage}</Text>
                             <PaperButton
                                 mode="contained"
-                                onPress={pickImages}
-                                disabled={loading}
-                                style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
-                                labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
-                                icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
+                                onPress={() => setErrorModalVisible(false)}
+                                style={[styles.modalButton, { backgroundColor: theme.colors.error }]}
+                                labelStyle={[styles.modalButtonLabel, { color: theme.colors.onError }]}
                             >
-                                Pick Images from Gallery
+                                Close
                             </PaperButton>
                         </View>
-
-                        {imageUris.length > 0 && (
-                            <View style={[styles.imagePreviewContainer, { borderColor: theme.colors.outlineVariant }]}>
-                                <ScrollView horizontal contentContainerStyle={styles.imagePreviewScroll} showsHorizontalScrollIndicator={false}>
-                                    {imageUris.map((uri, index) => (
-                                        <Image key={index} source={{ uri }} style={styles.imagePreview} resizeMode="cover" />
-                                    ))}
-                                </ScrollView>
-                            </View>
-                        )}
-                        
-                        {imageUris.length > 0 && (
-                          <PaperButton
-                            mode="contained"
-                            onPress={handleDone}
-                            disabled={loading}
-                            style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
-                            labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
-                          >
-                            {loading ? "Scanning..." : "Done"}
-                          </PaperButton>
-                        )}
-
-                        {loading && (
-                            <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
-                                <ActivityIndicator size="large" color={theme.colors.primary} />
-                                <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Scanning {imageUris.length} images...</Text>
-                            </View>
-                        )}
-
-                        {!loading && (
-                            <View style={styles.resultsContainer}>
-                                {gradesheetData.length > 0 && (
-                                    <View style={styles.parsedSection}>
-                                        <Title style={[styles.ocrSectionTitle, { color: theme.colors.onSurface }]}>Parsed Gradesheet Data</Title>
-                                        <View style={[styles.tableContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
-                                            <View style={[styles.tableHeader, { backgroundColor: theme.colors.background }]}>
-                                                <Text style={[styles.courseColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Course</Text>
-                                                <Text style={[styles.gradeColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Midterm</Text>
-                                                <Text style={[styles.gradeColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Final</Text>
-                                                <Text style={[styles.gradeColumn, styles.tableHeaderText, { color: theme.colors.onSurface }]}>Grade</Text>
-                                            </View>
-                                            <ScrollView>
-                                                {gradesheetData.map((item, index) => (
-                                                    <View key={index} style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
-                                                        <Text style={[styles.courseColumn, { color: theme.colors.onSurface }]}>{item.courseTitle} ({item.courseCode})</Text>
-                                                        <Text style={[styles.gradeColumn, { color: theme.colors.onSurface }]}>{item.midterm}</Text>
-                                                        <Text style={[styles.gradeColumn, { color: theme.colors.onSurface }]}>{item.final}</Text>
-                                                        <Text style={[styles.gradeColumn, { color: theme.colors.onSurface }]}>{item.grade}</Text>
-                                                    </View>
-                                                ))}
-                                            </ScrollView>
-                                        </View>
-                                    </View>
-                                )}
-                                {rawText && (
-                                    <View style={styles.rawSection}>
-                                        <Title style={[styles.ocrSectionTitle, { color: theme.colors.onSurface }]}>Raw OCR Text</Title>
-                                        <View style={[styles.rawTextContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
-                                            <Text style={[styles.rawTextOutput, { color: theme.colors.onSurface }]}>{rawText}</Text>
-                                        </View>
-                                    </View>
-                                )}
-                                {imageUris.length > 0 && gradesheetData.length === 0 && rawText && (
-                                    <Text style={[styles.noResultsText, { color: theme.colors.onSurfaceVariant }]}>
-                                        No gradesheet data was found in the images.
-                                    </Text>
-                                )}
-                            </View>
-                        )}
-                    </Card.Content>
-                </Card>
-            </ScrollView>
-
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={errorModalVisible}
-                onRequestClose={() => setErrorModalVisible(false)}
-            >
-                <View style={styles.centeredView}>
-                    <View style={[styles.modalView, { backgroundColor: theme.colors.surface, borderColor: theme.colors.error }]}>
-                        <Text style={[styles.modalTitle, { color: theme.colors.error }]}>Error</Text>
-                        <Text style={[styles.modalText, { color: theme.colors.onSurface }]}>{errorMessage}</Text>
-                        <PaperButton
-                            mode="contained"
-                            onPress={() => setErrorModalVisible(false)}
-                            style={[styles.modalButton, { backgroundColor: theme.colors.error }]}
-                            labelStyle={[styles.modalButtonLabel, { color: theme.colors.onError }]}
-                        >
-                            Close
-                        </PaperButton>
                     </View>
-                </View>
-            </Modal>
-        </View>
+                </Modal>
+            </View>
+        </Modal>
     );
 };
 
-export default GradesheetScannerScreen;
+// New styles for the modal overlay and container
+const modalStyles = StyleSheet.create({
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+    },
+});
+
+export default GradesheetScannerModal;

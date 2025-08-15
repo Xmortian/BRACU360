@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, Image, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import { Bell } from 'lucide-react-native';
-import StarBorder from './StarBorder'; // Assuming StarBorder is in the same directory
+import { Bell, Plus } from 'lucide-react-native'; // 👈 Added Plus icon import
+import StarBorder from './StarBorder'; 
+import CgpaCalcModal from './CgpaCalc';
+import GradesheetScannerModal from './GradesheetReaderScreen'; // 👈 Import the new GradesheetScanner modal
 
 // --- Import the shared styles file ---
 import styles from '../styles/styles';
@@ -208,10 +210,11 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
 // --- ProfileScreen Component ---
 const ProfileScreen = () => {
     const theme = useTheme();
-    const [isQuizVisible, setIsQuizVisible] = useState(false); // State for quiz modal visibility
-    const [winningHouse, setWinningHouse] = useState('Dhanshiri'); // State to store the winning house
+    const [isQuizVisible, setIsQuizVisible] = useState(false);
+    const [winningHouse, setWinningHouse] = useState('Dhanshiri');
+    const [isCgpaModalVisible, setIsCgpaModalVisible] = useState(false);
+    const [isGradesheetModalVisible, setIsGradesheetModalVisible] = useState(false); // 👈 New state for the gradesheet modal
 
-    // House logo mapping
     const houseLogoMapping = {
         Danshiri: require('../assets/quiz_logo1.png'),
         Chayaneer: require('../assets/quiz_logo2.png'),
@@ -220,21 +223,26 @@ const ProfileScreen = () => {
         Meghdut: require('../assets/quiz_logo5.png'),
     };
     
-    // Function to handle retaking the quiz
     const handleRetakeQuiz = () => {
-        setWinningHouse(null); // Clear the previous winning house
-        setIsQuizVisible(true); // Open the quiz modal again
+        setWinningHouse(null);
+        setIsQuizVisible(true);
     };
 
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
             <Appbar.Header style={styles.appBar}>
                 <Appbar.Content title="Profile" titleStyle={styles.appBarTitle} />
+                <Appbar.Action // 👈 The new header button
+                    icon={() => <Plus size={24} color={'#50E3C2'} />} 
+                    onPress={() => setIsGradesheetModalVisible(true)}
+                />
             </Appbar.Header>
 
-            <ScrollView style={styles.paddingContainer}>
+            <ScrollView contentContainerStyle={styles.paddingContainer}>
+                
+                {/* 1. User Information */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
-                    User Information
+                     User Information
                 </Text>
                 <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface }]}>
                     <Card.Content>
@@ -244,10 +252,31 @@ const ProfileScreen = () => {
                     </Card.Content>
                 </Card>
 
+                {/* 2. CGPA Calculator */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 10 }]}>
-                    Sorting Hat
+                     CGPA Calculator
                 </Text>
-
+                <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface, marginBottom: 20 }]}>
+                    <Card.Content>
+                        <Title style={{ color: theme.colors.onSurface }}>CGPA Calculator</Title>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
+                            Recalculate your grades and see what-if scenarios.
+                        </Paragraph>
+                        <PaperButton
+                            mode="contained"
+                            onPress={() => setIsCgpaModalVisible(true)}
+                            style={{ marginTop: 10, backgroundColor: theme.colors.primary }}
+                            labelStyle={{ color: theme.colors.onPrimary }}
+                        >
+                            Open CGPA Calculator
+                        </PaperButton>
+                    </Card.Content>
+                </Card>
+                
+                {/* 3. Sorting Hat */}
+                <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 10 }]}>
+                     Sorting Hat
+                </Text>
                 {!winningHouse ? (
                     <View style={styles.quizButtonContainer}>
                         <Image source={houseLogoMapping['Danshiri']} style={styles.floatingLogo} />
@@ -291,11 +320,20 @@ const ProfileScreen = () => {
                 )}
             </ScrollView>
 
-            {/* Quiz Modal */}
+            {/* Modals */}
             <QuizModal
                 visible={isQuizVisible}
                 onClose={() => setIsQuizVisible(false)}
                 onQuizComplete={setWinningHouse}
+            />
+            <CgpaCalcModal
+                visible={isCgpaModalVisible}
+                onClose={() => setIsCgpaModalVisible(false)}
+            />
+            {/* 👈 Render the new Gradesheet Scanner modal here */}
+            <GradesheetScannerModal
+                visible={isGradesheetModalVisible}
+                onClose={() => setIsGradesheetModalVisible(false)}
             />
         </View>
     );
@@ -310,15 +348,16 @@ const internalStyles = StyleSheet.create({
     houseNameBox: {
         marginTop: 10,
         alignItems: 'center',
-        width: 'auto', // Adjust width to content size
+        width: 'auto',
     },
     starBorder: {
-        paddingVertical: 10, // Adjust padding to make the box smaller vertically
-        paddingHorizontal: 20, // Adjust padding to make the box smaller horizontally
+        paddingVertical: 10,
+        paddingHorizontal: 20,
     },
     houseNameText: {
-        fontSize: 24, // You can adjust the font size to fit the smaller box
+        fontSize: 24,
     },
 });
 
 export default ProfileScreen;
+

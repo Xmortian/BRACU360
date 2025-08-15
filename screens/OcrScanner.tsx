@@ -11,7 +11,7 @@ import styles from '../styles/styles';
 
 const { width } = Dimensions.get('window');
 
-const OcrScannerScreen = ({ navigation }) => {
+const OcrScannerModal = ({ visible, onClose }) => {
     const theme = useTheme();
     const [imageUri, setImageUri] = useState(null);
     const [rawText, setRawText] = useState(null);
@@ -86,7 +86,7 @@ const OcrScannerScreen = ({ navigation }) => {
         if (Object.keys(dayHeaders).length === 0) {
             return [];
         }
-        
+
         const rows = {};
         blocks.forEach(block => {
             const top = Math.round(block.frame.top / 10) * 10;
@@ -98,7 +98,7 @@ const OcrScannerScreen = ({ navigation }) => {
 
         const formattedSchedule = [];
         const sortedRowKeys = Object.keys(rows).sort((a, b) => parseInt(a) - parseInt(b));
-        
+
         sortedRowKeys.forEach(rowKey => {
             const rowBlocks = rows[rowKey].sort((a, b) => a.frame.left - b.frame.left);
             let timeForThisRow = null;
@@ -120,7 +120,6 @@ const OcrScannerScreen = ({ navigation }) => {
                         for (const day in dayHeaders) {
                             const distance = Math.abs(block.frame.left - dayHeaders[day]);
                             if (distance < minDistance) {
-                                minDistance = distance;
                                 minDistance = distance;
                                 closestDay = day;
                             }
@@ -144,128 +143,129 @@ const OcrScannerScreen = ({ navigation }) => {
             const dayBIndex = daysOfWeek.indexOf(b.day);
             return dayAIndex - dayBIndex;
         });
-        
+
         return sortedByDay;
     };
 
     return (
-        <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Action
-                    icon={() => <ChevronLeft size={24} color={theme.colors.onPrimary} />}
-                    onPress={() => console.log('Navigate back')}
-                />
-                <Appbar.Content title="Course Details OCR" titleStyle={styles.appBarTitle} />
-            </Appbar.Header>
+        <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+            <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+                <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary} />
+                <Appbar.Header style={styles.appBar}>
+                    <Appbar.BackAction
+                        icon={() => <ChevronLeft size={24} color={theme.colors.onPrimary} />}
+                        onPress={onClose}
+                    />
+                    <Appbar.Content title="OCR Routine" titleStyle={styles.appBarTitle} />
+                </Appbar.Header>
 
-            <ScrollView contentContainerStyle={styles.paddingContainer}>
-                {/* Routine GIF and Instructions Section */}
-                <Card style={[styles.mainCard, { marginBottom: 20 }]}>
-                    <Card.Content style={{ alignItems: 'center', backgroundColor: '#000000', borderRadius: 10 }}>
-                        <Image
-                            source={require('../assets/routine.gif')}
-                            style={{ width: '100%', height: 200, resizeMode: 'contain', marginBottom: 10 }}
-                        />
-                        <Title style={[styles.cardTitle, { color: '#ffffff' }]}>
-                            Class Routine Upload
-                        </Title>
-                        <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                            Step 1: Log in to Connect.
-                        </Paragraph>
-                        <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                            Step 2: Take a screenshot of your class routine.
-                        </Paragraph>
-                        <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                            Step 3: Upload the screenshot!
-                        </Paragraph>
-                    </Card.Content>
-                </Card>
+                <ScrollView contentContainerStyle={styles.paddingContainer}>
+                    <Card style={[styles.mainCard, { marginBottom: 20 }]}>
+                        <Card.Content style={{ alignItems: 'center', backgroundColor: '#000000', borderRadius: 10 }}>
+                            <Image
+                                source={require('../assets/routine.gif')}
+                                style={{ width: '100%', height: 200, resizeMode: 'contain', marginBottom: 10 }}
+                            />
+                            <Title style={[styles.cardTitle, { color: '#ffffff' }]}>
+                                Class Routine Upload
+                            </Title>
+                            <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                                Step 1: Log in to Connect.
+                            </Paragraph>
+                            <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                                Step 2: Take a screenshot of your class routine.
+                            </Paragraph>
+                            <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                                Step 3: Upload the screenshot!
+                            </Paragraph>
+                        </Card.Content>
+                    </Card>
 
-                <Card style={styles.mainCard}>
-                    <Card.Content>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                            <PaperButton
-                                mode="contained"
-                                onPress={pickImage}
-                                disabled={loading}
-                                style={{ flex: 1, backgroundColor: theme.colors.primary }}
-                                labelStyle={styles.scanButtonLabel}
-                                icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
-                            >
-                                {loading ? "Recognizing..." : "Upload Screenshot"}
-                            </PaperButton>
-                            <PaperButton
-                                mode="outlined"
-                                onPress={() => console.log('Manual Input pressed')}
-                                disabled={loading}
-                                style={{ flex: 1, borderColor: theme.colors.primary }}
-                                labelStyle={[styles.scanButtonLabel, { color: theme.colors.primary }]}
-                            >
-                                Manual Input
-                            </PaperButton>
-                        </View>
-
-                        {imageUri && (
-                            <View style={styles.imageContainer}>
-                                <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+                    <Card style={styles.mainCard}>
+                        <Card.Content>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+                                <PaperButton
+                                    mode="contained"
+                                    onPress={pickImage}
+                                    disabled={loading}
+                                    style={{ flex: 1, backgroundColor: theme.colors.primary }}
+                                    labelStyle={styles.scanButtonLabel}
+                                    icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
+                                >
+                                    {loading ? "Recognizing..." : "Upload Screenshot"}
+                                </PaperButton>
+                                <PaperButton
+                                    mode="outlined"
+                                    onPress={() => Alert.alert('Manual Input', 'Coming soon!')}
+                                    disabled={loading}
+                                    style={{ flex: 1, borderColor: theme.colors.primary }}
+                                    labelStyle={[styles.scanButtonLabel, { color: theme.colors.primary }]}
+                                >
+                                    Manual Input
+                                </PaperButton>
                             </View>
-                        )}
 
-                        {loading && (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" color={theme.colors.primary} />
-                                <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Recognizing text...</Text>
-                            </View>
-                        )}
+                            {imageUri && (
+                                <View style={styles.imageContainer}>
+                                    <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+                                </View>
+                            )}
 
-                        {!loading && (
-                            <View style={styles.resultsContainer}>
-                                {scheduleData.length > 0 && (
-                                    <View style={styles.parsedSection}>
-                                        <Title style={styles.sectionTitle}>Parsed Class Schedule</Title>
-                                        <View style={styles.tableContainer}>
-                                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleScroll}>
-                                                <View>
-                                                    <View style={[styles.scheduleItem, styles.tableHeader]}>
-                                                        <Text style={[styles.scheduleDay, styles.tableHeaderText]}>Day</Text>
-                                                        <Text style={[styles.scheduleTime, styles.tableHeaderText]}>Time</Text>
-                                                        <Text style={[styles.scheduleDetails, styles.tableHeaderText]}>Details</Text>
-                                                    </View>
-                                                    {scheduleData.map((item, index) => (
-                                                        <View key={index} style={[styles.scheduleItem, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
-                                                            <Text style={[styles.scheduleDay, { color: theme.colors.onSurface }]}>{item.day}</Text>
-                                                            <Text style={[styles.scheduleTime, { color: theme.colors.onSurface }]}>{item.time}</Text>
-                                                            <Text style={[styles.scheduleDetails, { color: theme.colors.onSurface }]}>{item.details}</Text>
+                            {loading && (
+                                <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                                    <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Recognizing text...</Text>
+                                </View>
+                            )}
+
+                            {!loading && (
+                                <View style={styles.resultsContainer}>
+                                    {scheduleData.length > 0 && (
+                                        <View style={styles.parsedSection}>
+                                            <Title style={styles.sectionTitle}>Parsed Class Schedule</Title>
+                                            <View style={styles.tableContainer}>
+                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleScroll}>
+                                                    <View>
+                                                        <View style={[styles.scheduleItem, styles.tableHeader]}>
+                                                            <Text style={[styles.scheduleDay, styles.tableHeaderText]}>Day</Text>
+                                                            <Text style={[styles.scheduleTime, styles.tableHeaderText]}>Time</Text>
+                                                            <Text style={[styles.scheduleDetails, styles.tableHeaderText]}>Details</Text>
                                                         </View>
-                                                    ))}
-                                                </View>
-                                            </ScrollView>
+                                                        {scheduleData.map((item, index) => (
+                                                            <View key={index} style={[styles.scheduleItem, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
+                                                                <Text style={[styles.scheduleDay, { color: theme.colors.onSurface }]}>{item.day}</Text>
+                                                                <Text style={[styles.scheduleTime, { color: theme.colors.onSurface }]}>{item.time}</Text>
+                                                                <Text style={[styles.scheduleDetails, { color: theme.colors.onSurface }]}>{item.details}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                </ScrollView>
+                                            </View>
                                         </View>
-                                    </View>
-                                )}
+                                    )}
 
-                                {rawText && (
-                                    <View style={styles.rawSection}>
-                                        <Title style={styles.sectionTitle}>Raw OCR Text</Title>
-                                        <View style={styles.rawTextContainer} key={rawText ? 'raw-text-present' : 'raw-text-empty'}>
-                                            <Text style={[styles.rawTextOutput, { color: theme.colors.onSurface }]}>{rawText}</Text>
+                                    {rawText && (
+                                        <View style={styles.rawSection}>
+                                            <Title style={styles.sectionTitle}>Raw OCR Text</Title>
+                                            <View style={styles.rawTextContainer} key={rawText ? 'raw-text-present' : 'raw-text-empty'}>
+                                                <Text style={[styles.rawTextOutput, { color: theme.colors.onSurface }]}>{rawText}</Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                )}
+                                    )}
 
-                                {imageUri && scheduleData.length === 0 && rawText && (
-                                    <Text style={[styles.noResultsText, { color: theme.colors.onSurfaceVariant }]}>
-                                        No class schedule details were found in the image.
-                                    </Text>
-                                )}
-                            </View>
-                        )}
-                    </Card.Content>
-                </Card>
-            </ScrollView>
-        </View>
+                                    {imageUri && scheduleData.length === 0 && rawText && (
+                                        <Text style={[styles.noResultsText, { color: theme.colors.onSurfaceVariant }]}>
+                                            No class schedule details were found in the image.
+                                        </Text>
+                                    )}
+                                </View>
+                            )}
+                        </Card.Content>
+                    </Card>
+                </ScrollView>
+            </View>
+        </Modal>
     );
 };
 
-export default OcrScannerScreen;
+export default OcrScannerModal;
