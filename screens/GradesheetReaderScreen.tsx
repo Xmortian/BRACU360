@@ -73,7 +73,7 @@ const GradesheetScannerScreen = ({ navigation }) => {
                 cropping: true,
                 freeStyleCropEnabled: true, // Enables a customizable crop box
                 cropperToolbarTitle: `Page ${currentPage + 1} of ${selectedImages.length}`,
-            });
+            });g
 
             const newUris = [...uris, cropped.path];
             setCroppedUris(newUris);

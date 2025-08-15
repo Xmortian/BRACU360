@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import { Bell } from 'lucide-react-native';
+import StarBorder from './StarBorder'; // Assuming StarBorder is in the same directory
 
 // --- Import the shared styles file ---
 import styles from '../styles/styles';
@@ -208,7 +209,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
 const ProfileScreen = () => {
     const theme = useTheme();
     const [isQuizVisible, setIsQuizVisible] = useState(false); // State for quiz modal visibility
-    const [winningHouse, setWinningHouse] = useState(null); // State to store the winning house
+    const [winningHouse, setWinningHouse] = useState('Dhanshiri'); // State to store the winning house
 
     // House logo mapping
     const houseLogoMapping = {
@@ -266,11 +267,15 @@ const ProfileScreen = () => {
                 ) : (
                     <Card style={[styles.houseDisplayCard, { backgroundColor: theme.colors.surface }]}>
                         <Card.Content>
-                            <View style={styles.houseDisplayInfo}>
-                                <Title style={{ color: theme.colors.onSurface }}>Your BracU House:</Title>
-                                <Text style={[styles.winnerDisplay, { color: theme.colors.primary, textAlign: 'center' }]}>
-                                    {winningHouse}
-                                </Text>
+                            <View style={internalStyles.houseInfoContainer}>
+                                <Title style={{ color: theme.colors.onSurface, textAlign: 'center' }}>Your BracU House</Title>
+                                <View style={internalStyles.houseNameBox}>
+                                    <StarBorder as={View} speed="4s" color="cyan" style={internalStyles.starBorder}>
+                                        <Text style={[styles.winnerDisplayName, internalStyles.houseNameText, { color: 'cyan' }]}>
+                                            {winningHouse}
+                                        </Text>
+                                    </StarBorder>
+                                </View>
                             </View>
 
                             <TouchableOpacity
@@ -295,5 +300,25 @@ const ProfileScreen = () => {
         </View>
     );
 };
+
+// Internal styles to customize the layout
+const internalStyles = StyleSheet.create({
+    houseInfoContainer: {
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    houseNameBox: {
+        marginTop: 10,
+        alignItems: 'center',
+        width: 'auto', // Adjust width to content size
+    },
+    starBorder: {
+        paddingVertical: 10, // Adjust padding to make the box smaller vertically
+        paddingHorizontal: 20, // Adjust padding to make the box smaller horizontally
+    },
+    houseNameText: {
+        fontSize: 24, // You can adjust the font size to fit the smaller box
+    },
+});
 
 export default ProfileScreen;

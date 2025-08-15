@@ -15,6 +15,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import ImageViewing from 'react-native-image-viewing';
+import * as Notifications from 'expo-notifications'; // New import for notifications
 
 import styles from '../styles/styles'; // ← your existing shared styles
 
@@ -108,14 +109,15 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
   const theme = useTheme();
   const [deadlineName, setDeadlineName] = useState('');
   const [deadlineDate, setDeadlineDate] = useState(new Date());
-  const [reminderDays, setReminderDays] = useState(0);
+  const [reminderDays, setReminderDays] = useState(null); // Default to null for no reminder
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertTitle, setAlertTitle] = useState('');
-  const reminderOptions = [0, 1, 2, 3, 4, 5, 6, 7];
+  // Added null to the reminder options for 'No Reminder'
+  const reminderOptions = [null, 0, 1, 2, 3, 4, 5, 6, 7];
 
   const showAlert = (title, message) => {
     setAlertTitle(title);
@@ -123,7 +125,35 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
     setAlertModalVisible(true);
   };
 
-  const handleSave = () => {
+  const scheduleDeadlineNotification = async (deadlineName, deadlineDate, reminderDays) => {
+    // Only schedule if a reminder is selected
+    if (reminderDays === null) return; 
+
+    const triggerDate = new Date(deadlineDate);
+    // If reminder is for 0 days, the trigger is exactly at the deadline.
+    // If it's for N days, subtract N days from the deadline date, preserving the time.
+    if (reminderDays > 0) {
+      triggerDate.setDate(triggerDate.getDate() - reminderDays);
+    }
+    
+    // Only schedule if the trigger is in the future
+    if (triggerDate.getTime() > new Date().getTime()) { 
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Upcoming Deadline Reminder!",
+          body: `Your deadline for "${deadlineName}" is approaching on ${new Date(deadlineDate).toLocaleDateString()}.`,
+        },
+        trigger: {
+          date: triggerDate,
+        },
+      });
+      console.log(`Notification scheduled for ${deadlineName} on ${triggerDate.toDateString()}`);
+    } else {
+      console.log(`Notification for ${deadlineName} was not scheduled as the reminder date is in the past.`);
+    }
+  };
+
+  const handleSave = async () => {
     if (!deadlineName) {
       showAlert('Error', 'Please enter a name for the deadline.');
       return;
@@ -132,6 +162,10 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
       showAlert('Error', 'Please select a deadline date.');
       return;
     }
+
+    // Schedule the notification before saving the deadline
+    await scheduleDeadlineNotification(deadlineName, deadlineDate, reminderDays);
+
     onAddDeadline(courseId, {
       id: Math.random().toString(),
       name: deadlineName,
@@ -140,7 +174,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
     });
     setDeadlineName('');
     setDeadlineDate(new Date());
-    setReminderDays(1);
+    setReminderDays(null);
     onClose();
   };
 
@@ -152,6 +186,12 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
   const onTimeChange = (event, selectedTime) => {
     setShowTimePicker(Platform.OS === 'ios');
     if (selectedTime) setDeadlineDate(selectedTime);
+  };
+
+  const getReminderText = (day) => {
+    if (day === null) return 'No Reminder';
+    if (day === 0) return 'Right at deadline';
+    return `${day} day(s) before`;
   };
 
   return (
@@ -213,7 +253,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
               onPress={() => setIsDropdownVisible(!isDropdownVisible)}
               style={[styles.dropdownButton, { borderColor: theme.colors.onSurfaceVariant }]}
             >
-              <Text style={{ color: theme.colors.onSurface }}>{reminderDays} day(s) before</Text>
+              <Text style={{ color: theme.colors.onSurface }}>{getReminderText(reminderDays)}</Text>
               <ChevronDown size={20} color={theme.colors.onSurfaceVariant} />
             </TouchableOpacity>
 
@@ -229,7 +269,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
                     style={[styles.dropdownItem, { backgroundColor: reminderDays === day ? theme.colors.primaryContainer : 'transparent' }]}
                   >
                     <Text style={{ color: reminderDays === day ? theme.colors.onPrimaryContainer : theme.colors.onSurface }}>
-                      {day} day(s) before
+                      {getReminderText(day)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -417,22 +457,47 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
   const theme = useTheme();
   const [deadlineName, setDeadlineName] = useState('');
   const [deadlineDate, setDeadlineDate] = useState(new Date());
-  const [reminderDays, setReminderDays] = useState(0);
+  const [reminderDays, setReminderDays] = useState(null);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertTitle, setAlertTitle] = useState('');
-  const reminderOptions = [0, 1, 2, 3, 4, 5, 6, 7];
+  const reminderOptions = [null, 0, 1, 2, 3, 4, 5, 6, 7];
 
   const showAlert = (title, message) => {
     setAlertTitle(title);
     setAlertMessage(message);
     setAlertModalVisible(true);
   };
+  
+  const scheduleDeadlineNotification = async (deadlineName, deadlineDate, reminderDays) => {
+    if (reminderDays === null) return; 
+    
+    const triggerDate = new Date(deadlineDate);
+    if (reminderDays > 0) {
+      triggerDate.setDate(triggerDate.getDate() - reminderDays);
+    }
+    
+    if (triggerDate.getTime() > new Date().getTime()) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Upcoming General Deadline!",
+          body: `Your deadline for "${deadlineName}" is approaching on ${new Date(deadlineDate).toLocaleDateString()}.`,
+        },
+        trigger: {
+          date: triggerDate,
+        },
+      });
+      console.log(`General notification scheduled for ${deadlineName} on ${triggerDate.toDateString()}`);
+    } else {
+      console.log(`General notification for ${deadlineName} was not scheduled as the reminder date is in the past.`);
+    }
+  };
 
-  const handleSave = () => {
+
+  const handleSave = async () => {
     if (!deadlineName) {
       showAlert('Error', 'Please enter a name for the deadline.');
       return;
@@ -441,6 +506,9 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
       showAlert('Error', 'Please select a deadline date.');
       return;
     }
+
+    await scheduleDeadlineNotification(deadlineName, deadlineDate, reminderDays);
+
     onAddDeadline({
       id: Math.random().toString(),
       name: deadlineName,
@@ -449,7 +517,7 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
     });
     setDeadlineName('');
     setDeadlineDate(new Date());
-    setReminderDays(1);
+    setReminderDays(null);
     onClose();
   };
 
@@ -461,6 +529,12 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
   const onTimeChange = (event, selectedTime) => {
     setShowTimePicker(Platform.OS === 'ios');
     if (selectedTime) setDeadlineDate(selectedTime);
+  };
+
+  const getReminderText = (day) => {
+    if (day === null) return 'No Reminder';
+    if (day === 0) return 'Right at deadline';
+    return `${day} day(s) before`;
   };
 
   return (
@@ -518,7 +592,7 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
               onPress={() => setIsDropdownVisible(!isDropdownVisible)}
               style={[styles.dropdownButton, { borderColor: theme.colors.onSurfaceVariant }]}
             >
-              <Text style={{ color: theme.colors.onSurface }}>{reminderDays} day(s) before</Text>
+              <Text style={{ color: theme.colors.onSurface }}>{getReminderText(reminderDays)}</Text>
               <ChevronDown size={20} color={theme.colors.onSurfaceVariant} />
             </TouchableOpacity>
 
@@ -534,7 +608,7 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
                     style={[styles.dropdownItem, { backgroundColor: reminderDays === day ? theme.colors.primaryContainer : 'transparent' }]}
                   >
                     <Text style={{ color: reminderDays === day ? theme.colors.onPrimaryContainer : theme.colors.onSurface }}>
-                      {day} day(s) before
+                      {getReminderText(day)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -563,13 +637,27 @@ const CoursesScreen = () => {
   const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
-  const [courses, setCourses] = useState([
-    { id: '1', courseName: 'Programming Language I', notes: [], deadlines: [{ id: 'd1', name: 'Assignment 2', date: '2025-08-08T18:00:00.000Z', reminderDays: 2 }] },
-    { id: '2', courseName: 'Introduction to Psychology', notes: [], deadlines: [] },
-    { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-08-17T12:00:00.000Z', reminderDays: 7 }] },
-    { id: '4', courseName: 'Object-Oriented Programming', notes: [], deadlines: [] },
-  ]);
+  // New state for semester-wise data and dropdown
+  const [allSemestersData, setAllSemestersData] = useState({
+    'Summer 2025': [
+      { id: '1', courseName: 'Programming Language I', notes: [], deadlines: [{ id: 'd1', name: 'Assignment 2', date: '2025-08-08T18:00:00.000Z', reminderDays: 2 }] },
+      { id: '2', courseName: 'Introduction to Psychology', notes: [], deadlines: [] },
+      { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-08-17T12:00:00.000Z', reminderDays: 7 }] },
+      { id: '4', courseName: 'Object-Oriented Programming', notes: [], deadlines: [] },
+    ],
+    'Spring 2025': [
+      { id: '5', courseName: 'Data Structures', notes: [], deadlines: [] },
+      { id: '6', courseName: 'Algorithm Design', notes: [], deadlines: [] },
+    ],
+    'Fall 2024': [
+      { id: '7', courseName: 'Intro to Robotics', notes: [], deadlines: [] },
+    ],
+  });
+  const [selectedSemester, setSelectedSemester] = useState('Summer 2025');
+  const [isSemesterDropdownVisible, setIsSemesterDropdownVisible] = useState(false);
 
+  const courses = allSemestersData[selectedSemester] || [];
+  
   const [generalDeadlines, setGeneralDeadlines] = useState([]);
   const [isGeneralDeadlineModalVisible, setIsGeneralDeadlineModalVisible] = useState(false);
 
@@ -582,23 +670,32 @@ const CoursesScreen = () => {
   };
 
   const handleAddDeadline = (courseId, deadlineData) => {
-    setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, deadlines: [...c.deadlines, deadlineData] } : c)));
+    setAllSemestersData((prev) => ({
+      ...prev,
+      [selectedSemester]: prev[selectedSemester].map((c) => (c.id === courseId ? { ...c, deadlines: [...c.deadlines, deadlineData] } : c))
+    }));
   };
 
   // Called when a photo is captured (temp), we persist then update state
   const handleCapture = async (tempUri) => {
     if (!selectedCourse?.courseName) return;
     const finalPath = await savePhotoForCourseAsync(tempUri, selectedCourse.courseName);
-    setCourses((prev) =>
-      prev.map((c) => (c.id === selectedCourse.id ? { ...c, notes: [finalPath, ...c.notes] } : c))
-    );
+    setAllSemestersData((prev) => ({
+      ...prev,
+      [selectedSemester]: prev[selectedSemester].map((c) => (
+        c.id === selectedCourse.id ? { ...c, notes: [finalPath, ...c.notes] } : c
+      ))
+    }));
   };
 
   const handleRemoveNote = async (uri) => {
     await deleteCoursePhotoAsync(uri);
-    setCourses((prev) =>
-      prev.map((c) => (c.id === selectedCourse.id ? { ...c, notes: c.notes.filter((u) => u !== uri) } : c))
-    );
+    setAllSemestersData((prev) => ({
+      ...prev,
+      [selectedSemester]: prev[selectedSemester].map((c) => (
+        c.id === selectedCourse.id ? { ...c, notes: c.notes.filter((u) => u !== uri) } : c
+      ))
+    }));
   };
 
   const openNotesModal = (course) => {
@@ -614,6 +711,27 @@ const CoursesScreen = () => {
     if (diffInHours > 0) return `${diffInHours} hours left`;
     return 'Passed';
   };
+
+  // New function to handle notification permissions
+  const registerForPushNotificationsAsync = async () => {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+        Alert.alert('Permission Denied', 'You will not receive deadline notifications.');
+        return;
+    }
+  };
+
+  // Register for notifications when the component first loads
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
 
   const renderCourseItem = ({ item }) => (
     <Card style={[styles.courseCard, { backgroundColor: theme.colors.surface, marginBottom: 10, borderRadius: 12 }]}>
@@ -665,7 +783,19 @@ const CoursesScreen = () => {
         contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
         ListHeaderComponent={() => (
           <View>
-            <View style={[styles.sectionHeader, { marginTop: 10 }]}>
+            {/* Semester Dropdown */}
+            <TouchableOpacity 
+              onPress={() => setIsSemesterDropdownVisible(true)} 
+              style={[
+                styles.dropdownButton, 
+                { marginTop: 10, borderColor: theme.colors.outline, backgroundColor: theme.colors.surface }
+              ]}
+            >
+              <Text style={{ color: theme.colors.onSurface, fontSize: 16 }}>{selectedSemester}</Text>
+              <ChevronDown size={20} color={theme.colors.onSurface} />
+            </TouchableOpacity>
+
+            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>General Deadlines</Text>
               <TouchableOpacity onPress={() => setIsGeneralDeadlineModalVisible(true)}>
                 <Text style={[styles.addButton, { color: theme.colors.primary }]}>+ Add</Text>
@@ -724,6 +854,40 @@ const CoursesScreen = () => {
         onClose={() => setIsGeneralDeadlineModalVisible(false)}
         onAddDeadline={handleAddGeneralDeadline}
       />
+
+      {/* Semester Selection Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isSemesterDropdownVisible}
+        onRequestClose={() => setIsSemesterDropdownVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={() => setIsSemesterDropdownVisible(false)}
+        >
+          <View style={[styles.semesterDropdown, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
+            {Object.keys(allSemestersData).map((semester) => (
+              <TouchableOpacity
+                key={semester}
+                style={[
+                  styles.dropdownItem,
+                  { backgroundColor: selectedSemester === semester ? theme.colors.primaryContainer : 'transparent' }
+                ]}
+                onPress={() => {
+                  setSelectedSemester(semester);
+                  setIsSemesterDropdownVisible(false);
+                }}
+              >
+                <Text style={{ color: selectedSemester === semester ? theme.colors.onPrimaryContainer : theme.colors.onSurface }}>
+                  {semester}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
