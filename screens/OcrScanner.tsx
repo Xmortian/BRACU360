@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import {
     ChevronLeft,
@@ -54,10 +54,23 @@ const OcrScannerModal = ({ visible, onClose }) => {
         try {
             const textResult = await TextRecognition.recognize(uri);
             const fullText = textResult.text;
-
             setRawText(fullText);
-            const parsedSchedule = parseClassSchedule(textResult.blocks);
-            setScheduleData(parsedSchedule);
+
+            // Using the new, more sophisticated parsing function
+            const parsedSchedule = parseFullSchedule(textResult.blocks);
+            console.log('Parsed Schedule:', parsedSchedule);
+            
+            // Convert the parsed object into an array for the FlatList/ScrollView
+            const flatSchedule = Object.entries(parsedSchedule).flatMap(([day, times]) =>
+                Object.entries(times).map(([time, course]) => ({
+                    day,
+                    time,
+                    course: course.trim(), // Trim whitespace
+                }))
+            );
+
+            // Filter out empty 'XXXX' slots for cleaner display
+            setScheduleData(flatSchedule.filter(item => item.course !== "XXXX"));
 
         } catch (error) {
             console.error('Error performing OCR:', error);
@@ -68,84 +81,70 @@ const OcrScannerModal = ({ visible, onClose }) => {
         }
     };
 
-    const parseClassSchedule = (blocks) => {
-        if (!blocks || blocks.length === 0) return [];
+const parseFullSchedule = (ocrBlocks) => {
+    const DAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+    const TIME_REGEX = /\d{1,2}:\d{2}\s?(AM|PM)\s*-\s*\d{1,2}:\d{2}\s?(AM|PM)/i;
 
-        const daysOfWeek = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-        const timeRegex = /(\d{1,2}:[0-9O]{2}\s*(A|P)M{1,2}?)\s*[-—MN]?\s*(\d{1,2}:[0-9O]{2}\s*(A|P)M{1,2}?)/i;
-        const courseRegex = /^\s*([A-Z]{2,4})\s?([A-Z0-9-]{3,10}).*$/i;
+    // Fix common OCR issues: O → 0, extra spaces
+    const normalize = (text) =>
+        text
+            .toUpperCase()
+            .replace(/O/g, "0")
+            .replace(/\s+/g, " ")
+            .trim();
 
-        const dayHeaders = {};
-        blocks.forEach(block => {
-            const text = block.text.trim().toUpperCase();
-            if (daysOfWeek.includes(text)) {
-                dayHeaders[text] = block.frame.left;
-            }
-        });
+    const allBlocks = ocrBlocks.filter(b => b && b.text).map(b => ({
+        ...b,
+        text: normalize(b.text),
+    }));
 
-        if (Object.keys(dayHeaders).length === 0) {
-            return [];
+    const dayHeaders = [];
+    const timeSlots = [];
+    const courses = [];
+
+    allBlocks.forEach(block => {
+        if (DAYS.includes(block.text)) {
+            dayHeaders.push(block);
+        } else if (TIME_REGEX.test(block.text)) {
+            timeSlots.push(block.text);
+        } else {
+            courses.push(block);
         }
+    });
 
-        const rows = {};
-        blocks.forEach(block => {
-            const top = Math.round(block.frame.top / 10) * 10;
-            if (!rows[top]) {
-                rows[top] = [];
-            }
-            rows[top].push(block);
+    // Deduplicate + preserve order
+    const uniqueTimeSlots = [...new Set(timeSlots)];
+
+    const routine = {};
+    DAYS.forEach(day => {
+        routine[day] = {};
+        uniqueTimeSlots.forEach(slot => {
+            routine[day][slot] = "XXXX"; // fill all blanks with XXXX
         });
+    });
 
-        const formattedSchedule = [];
-        const sortedRowKeys = Object.keys(rows).sort((a, b) => parseInt(a) - parseInt(b));
+    // Assign courses row by row
+    // (Very simplified version: assumes OCR gives blocks in row order)
+    let currentDay = null;
+    let slotIndex = 0;
 
-        sortedRowKeys.forEach(rowKey => {
-            const rowBlocks = rows[rowKey].sort((a, b) => a.frame.left - b.frame.left);
-            let timeForThisRow = null;
+    allBlocks.forEach(block => {
+        if (DAYS.includes(block.text)) {
+            currentDay = block.text;
+            slotIndex = 0;
+        } else if (TIME_REGEX.test(block.text)) {
+            // move slotIndex to match this time
+            slotIndex = uniqueTimeSlots.indexOf(block.text);
+        } else if (currentDay && slotIndex < uniqueTimeSlots.length) {
+            // assign course
+            const slot = uniqueTimeSlots[slotIndex];
+            routine[currentDay][slot] = block.text;
+            slotIndex++;
+        }
+    });
 
-            rowBlocks.forEach(block => {
-                const text = block.text.trim().toUpperCase();
-                if (timeRegex.test(text)) {
-                    timeForThisRow = text;
-                }
-            });
-
-            if (timeForThisRow) {
-                rowBlocks.forEach(block => {
-                    const text = block.text.trim().toUpperCase();
-                    if (courseRegex.test(text)) {
-                        let closestDay = null;
-                        let minDistance = Infinity;
-
-                        for (const day in dayHeaders) {
-                            const distance = Math.abs(block.frame.left - dayHeaders[day]);
-                            if (distance < minDistance) {
-                                minDistance = distance;
-                                closestDay = day;
-                            }
-                        }
-
-                        if (closestDay) {
-                            const newEntry = {
-                                day: closestDay,
-                                time: timeForThisRow,
-                                details: text,
-                            };
-                            formattedSchedule.push(newEntry);
-                        }
-                    }
-                });
-            }
-        });
-
-        const sortedByDay = formattedSchedule.sort((a, b) => {
-            const dayAIndex = daysOfWeek.indexOf(a.day);
-            const dayBIndex = daysOfWeek.indexOf(b.day);
-            return dayAIndex - dayBIndex;
-        });
-
-        return sortedByDay;
-    };
+    return routine;
+};
 
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -235,7 +234,7 @@ const OcrScannerModal = ({ visible, onClose }) => {
                                                             <View key={index} style={[styles.scheduleItem, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
                                                                 <Text style={[styles.scheduleDay, { color: theme.colors.onSurface }]}>{item.day}</Text>
                                                                 <Text style={[styles.scheduleTime, { color: theme.colors.onSurface }]}>{item.time}</Text>
-                                                                <Text style={[styles.scheduleDetails, { color: theme.colors.onSurface }]}>{item.details}</Text>
+                                                                <Text style={[styles.scheduleDetails, { color: theme.colors.onSurface }]}>{item.course}</Text>
                                                             </View>
                                                         ))}
                                                     </View>

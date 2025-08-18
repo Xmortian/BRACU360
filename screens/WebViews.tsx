@@ -6,6 +6,7 @@ import { WebView } from 'react-native-webview';
 import { ArrowLeft } from 'lucide-react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styles from '../styles/styles';
+import CircularText from '../UI/CirculatText'; // 👈 Updated import path
 
 const Stack = createNativeStackNavigator();
 
@@ -40,9 +41,10 @@ function WebviewDetailScreen({ route }) {
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 startInLoadingState={true}
+                // --- Replace the loading indicator with CircularText ---
                 renderLoading={() => (
-                    <View style={styles.loadingContainer}>
-                        <Text style={{ color: theme.colors.onSurfaceVariant }}>Loading {title || 'website'}...</Text>
+                    <View style={localStyles.loadingContainer}>
+                        <CircularText text="BRACU*360*" />
                     </View>
                 )}
                 onError={(syntheticEvent) => {
@@ -171,7 +173,7 @@ const WebViews = () => {
 
 export default WebViews;
 
-// --- Local styles for input fields ---
+// --- Local styles for input fields and new components ---
 const localStyles = StyleSheet.create({
     input: {
         borderWidth: 1,
@@ -179,6 +181,30 @@ const localStyles = StyleSheet.create({
         borderRadius: 8,
         padding: 20,
         marginBottom: 100,
-        backgroundColor: 'white'
-    }
+        backgroundColor: 'white',
+    },
+    loadingContainer: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#121212', // Dark background for the spinner
+    },
+    circularTextContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        transform: [{ rotate: '0deg' }],
+    },
+    circularLetterContainer: {
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    circularLetterText: {
+        fontSize: 24,
+        fontWeight: '900',
+        color: '#fff',
+    },
 });
