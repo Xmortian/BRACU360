@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 
-const CircularText = ({ text = "**Bracu ** 360*+++", size = 200, spinDuration = 10000 }) => {
+const CircularText = ({ text = " B r a c u * 3 6 0 *", size = 200, spinDuration = 10000 }) => {
     const letters = Array.from(text.toUpperCase());
     const rotateAnim = useRef(new Animated.Value(0)).current;
 

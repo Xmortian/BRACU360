@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Appbar, Card, Title, Paragraph, useTheme, FAB, Button } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
 import { ArrowLeft } from 'lucide-react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styles from '../styles/styles';
-import CircularText from '../UI/CirculatText'; // 👈 Updated import path
+import CircularText from '../UI/CirculatText';
 
 const Stack = createNativeStackNavigator();
 
@@ -41,7 +41,6 @@ function WebviewDetailScreen({ route }) {
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 startInLoadingState={true}
-                // --- Replace the loading indicator with CircularText ---
                 renderLoading={() => (
                     <View style={localStyles.loadingContainer}>
                         <CircularText text="BRACU*360*" />
@@ -90,21 +89,37 @@ function WebsiteAddScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Action icon={() => <ArrowLeft size={24} color={theme.colors.onPrimary} />} onPress={() => navigation.goBack()} />
-                <Appbar.Content title="Add Website" titleStyle={styles.appBarTitle} />
-            </Appbar.Header>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
-                <TextInput placeholder="ID" value={link} onChangeText={setLink} style={localStyles.input} />
-                <TextInput placeholder="Gsuite Email" value={reason} onChangeText={setReason} style={localStyles.input} />
-                <TextInput placeholder="Link Of the Site" value={category} onChangeText={setCategory} style={localStyles.input} />
-                <TextInput placeholder="How will the site help the students" value={name} onChangeText={setName} style={localStyles.input} />
-                <Button mode="contained" style={{ marginTop: 20 }} onPress={submitWebsite}>
-                    Submit
-                </Button>
-            </ScrollView>
-        </SafeAreaView>
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={[styles.screenContainer, { backgroundColor: '#000' }]}>
+                    <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
+                        <Appbar.Action icon={() => <ArrowLeft size={24} color={theme.colors.onPrimary} />} onPress={() => navigation.goBack()} />
+                        <Appbar.Content title="Website Add Proposal" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
+                    </Appbar.Header>
+                    <ScrollView contentContainerStyle={{ padding: 20 }}>
+                        <Text style={localStyles.inputLabel}>ID</Text>
+                        <TextInput value={link} onChangeText={setLink} style={localStyles.input} placeholderTextColor="#888" />
+
+                        <Text style={localStyles.inputLabel}>Gsuite Email</Text>
+                        <TextInput value={reason} onChangeText={setReason} style={localStyles.input} placeholderTextColor="#888" />
+
+                        <Text style={localStyles.inputLabel}>Link of the Site</Text>
+                        <TextInput value={category} onChangeText={setCategory} style={localStyles.input} placeholderTextColor="#888" />
+
+                        <Text style={localStyles.inputLabel}>How will the site help the students</Text>
+                        <TextInput value={name} onChangeText={setName} style={localStyles.input} placeholderTextColor="#888" />
+
+                        <Button mode="contained" style={{ marginTop: 20 }} onPress={submitWebsite}>
+                            Submit
+                        </Button>
+                    </ScrollView>
+                </View>
+            </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -175,19 +190,25 @@ export default WebViews;
 
 // --- Local styles for input fields and new components ---
 const localStyles = StyleSheet.create({
+    inputLabel: {
+        color: '#fff',
+        marginBottom: 5,
+        fontWeight: 'bold',
+    },
     input: {
+        color: '#fff',
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#333',
         borderRadius: 8,
-        padding: 20,
-        marginBottom: 100,
-        backgroundColor: 'white',
+        padding: 10,
+        marginBottom: 15,
+        backgroundColor: '#1c1c1c',
     },
     loadingContainer: {
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#121212', // Dark background for the spinner
+        backgroundColor: '#121212',
     },
     circularTextContainer: {
         justifyContent: 'center',
