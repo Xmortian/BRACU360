@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import styles from '../styles/styles';
-import { Dimensions } from 'react-native';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { Trash2 } from 'lucide-react-native';
 
-// Import the OCR Scanner Modal
 import OcrScannerModal from './OcrScanner';
-// Import the ProfileScreen component
 import {
     ChevronLeft,
     ChevronRight,
@@ -19,19 +19,98 @@ import {
     MapPin,
     User,
     PlusCircle,
+    Image as ImageIcon,
 } from 'lucide-react-native';
 
-function YearPlannerModal({ visible, onClose }) {
-    const images = [
-        {
-            url: '',
-            width: 7240,
-            o0height: 4640,
-            props: {
-                source: require('../assets/year_planner.png'),
-            },
-        },
-    ];
+const imageDir = FileSystem.documentDirectory + 'user_images/';
+
+// New modal component for image uploading and viewing
+function ImageUploaderModal({ visible, onClose }) {
+    const [images, setImages] = useState([]);
+    const [isFullScreenViewerVisible, setIsFullScreenViewerVisible] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const loadImages = async () => {
+        try {
+            const dirInfo = await FileSystem.getInfoAsync(imageDir);
+            if (!dirInfo.exists) {
+                await FileSystem.makeDirectoryAsync(imageDir, { intermediates: true });
+            }
+            const files = await FileSystem.readDirectoryAsync(imageDir);
+            const imageUris = files.map(file => ({ url: imageDir + file, name: file }));
+            setImages(imageUris);
+        } catch (err) {
+            console.error(err.message, err.code);
+        }
+    };
+
+    const handleUpload = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission required', 'Please grant permission to access your photo library.');
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            const sourceUri = result.assets[0].uri;
+            const fileName = sourceUri.split('/').pop();
+            const destinationPath = `${imageDir}${fileName}`;
+
+            try {
+                await FileSystem.copyAsync({
+                    from: sourceUri,
+                    to: destinationPath,
+                });
+                Alert.alert('Success', 'Image saved successfully!');
+                loadImages(); // Reload images to include the new one
+            } catch (err) {
+                console.error('Error saving image: ', err.message);
+                Alert.alert('Error', 'Failed to save image.');
+            }
+        }
+    };
+    
+    const handleDeleteImage = async (fileName) => {
+        const filePath = imageDir + fileName;
+        try {
+            await FileSystem.deleteAsync(filePath);
+            Alert.alert('Success', 'Image deleted successfully!');
+            loadImages();
+        } catch (err) {
+            console.error('Error deleting image: ', err.message);
+            Alert.alert('Error', 'Failed to delete image.');
+        }
+    };
+
+    useEffect(() => {
+        if (visible) {
+            loadImages();
+        }
+    }, [visible]);
+
+    const renderThumbnail = ({ item, index }) => (
+        <TouchableOpacity
+            style={localStyles.thumbnailContainer}
+            onPress={() => {
+                setCurrentImageIndex(index);
+                setIsFullScreenViewerVisible(true);
+            }}
+        >
+            <Image source={{ uri: item.url }} style={localStyles.thumbnail} />
+            <TouchableOpacity 
+                style={localStyles.deleteIcon} 
+                onPress={() => handleDeleteImage(item.name)}
+            >
+                <Trash2 size={18} color="red" />
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
 
     return (
         <Modal
@@ -40,29 +119,47 @@ function YearPlannerModal({ visible, onClose }) {
             animationType="fade"
             onRequestClose={onClose}
         >
-            <ImageViewer
-                imageUrls={images}
-                enableSwipeDown
-                onSwipeDown={onClose}
-                backgroundColor="#000"
-                renderIndicator={() => null}
-                renderHeader={() => (
+            <View style={{ flex: 1, backgroundColor: 'white' }}>
+                <View style={localStyles.modalHeader}>
+                    <Text style={localStyles.modalTitle}>Quick Access Gallery</Text>
+                    <Text style={localStyles.modalSubtitle}>Store important images (eg. ID ).</Text>
                     <TouchableOpacity
                         onPress={onClose}
-                        style={{
-                            position: 'absolute',
-                            top: 40,
-                            right: 20,
-                            backgroundColor: 'rgba(255,255,255,0.8)',
-                            padding: 8,
-                            borderRadius: 4,
-                            zIndex: 99,
-                        }}
+                        style={localStyles.closeButton}
                     >
-                        <Text style={{ fontWeight: 'bold' }}>✕</Text>
+                        <Text style={localStyles.closeButtonText}>✕</Text>
                     </TouchableOpacity>
-                )}
-            />
+                </View>
+                
+                <FlatList
+                    data={images}
+                    renderItem={renderThumbnail}
+                    keyExtractor={(item) => item.name}
+                    numColumns={3}
+                    contentContainerStyle={localStyles.thumbnailList}
+                />
+
+                <TouchableOpacity
+                    onPress={handleUpload}
+                    style={localStyles.uploadButton}
+                >
+                    <Text style={localStyles.uploadButtonText}>Upload Image</Text>
+                </TouchableOpacity>
+            </View>
+
+            {isFullScreenViewerVisible && (
+                <Modal visible={true} transparent={true}>
+                    <ImageViewer
+                        imageUrls={images}
+                        enableSwipeDown
+                        onSwipeDown={() => setIsFullScreenViewerVisible(false)}
+                        backgroundColor="black"
+                        renderIndicator={() => null}
+                        index={currentImageIndex}
+                        onChange={(index) => setCurrentImageIndex(index)}
+                    />
+                </Modal>
+            )}
         </Modal>
     );
 }
@@ -96,10 +193,10 @@ function RoutineOverviewModal({ visible, onClose }) {
 }
 
 // --- HomeScreen Component ---
-const HomeScreen = () => { // 👈 Removed navigation prop
+const HomeScreen = () => { 
     const theme = useTheme();
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [isYearPlannerVisible, setIsYearPlannerVisible] = useState(false);
+    const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
     const [isRoutineOverviewVisible, setIsRoutineOverviewVisible] = useState(false);
     const [isOcrModalVisible, setIsOcrModalVisible] = useState(false);
 
@@ -164,8 +261,8 @@ const HomeScreen = () => { // 👈 Removed navigation prop
             <Appbar.Header style={styles.appBar}>
                 {/* Left side actions */}
                 <Appbar.Action
-                    icon={() => <BookText size={24} color={theme.colors.onPrimary} />}
-                    onPress={() => setIsYearPlannerVisible(true)}
+                    icon={() => <ImageIcon size={24} color={theme.colors.onPrimary} />}
+                    onPress={() => setIsImageViewerVisible(true)}
                 />
                 <Appbar.Action
                     icon={() => <ClipboardList size={24} color={theme.colors.onPrimary} />}
@@ -234,9 +331,9 @@ const HomeScreen = () => { // 👈 Removed navigation prop
             </ScrollView>
 
             {/* Modals */}
-            <YearPlannerModal
-                visible={isYearPlannerVisible}
-                onClose={() => setIsYearPlannerVisible(false)}
+            <ImageUploaderModal
+                visible={isImageViewerVisible}
+                onClose={() => setIsImageViewerVisible(false)}
             />
             <RoutineOverviewModal
                 visible={isRoutineOverviewVisible}
@@ -250,5 +347,78 @@ const HomeScreen = () => { // 👈 Removed navigation prop
         </View>
     );
 };
+
+const localStyles = StyleSheet.create({
+    modalHeader: {
+        paddingTop: 60,
+        paddingHorizontal: 20,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 10,
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        padding: 8,
+        borderRadius: 4,
+        zIndex: 99,
+    },
+    closeButtonText: {
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    uploadButton: {
+        position: 'absolute',
+        bottom: 30,
+        alignSelf: 'center',
+        backgroundColor: 'steelblue',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 25,
+        elevation: 3,
+        zIndex: 99,
+    },
+    uploadButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    thumbnailList: {
+        justifyContent: 'flex-start',
+        paddingTop: 10,
+        paddingHorizontal: 10,
+    },
+    thumbnailContainer: {
+        width: Dimensions.get('window').width / 2.2,
+        height: Dimensions.get('window').width / 2.2,
+        margin: 5,
+        position: 'relative',
+    },
+    thumbnail: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 8,
+    },
+    deleteIcon: {
+        position: 'absolute',
+        top: 5,
+        right: 5,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        borderRadius: 12,
+        padding: 3,
+        zIndex: 10,
+    }
+});
 
 export default HomeScreen;

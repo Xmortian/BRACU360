@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Appbar, Card, Title, Paragraph, useTheme, FAB, Button } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
@@ -21,39 +21,6 @@ async function sendToGoogleForm(formUrl, fields) {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formBody,
     });
-}
-
-// --- Webview Detail Screen ---
-function WebviewDetailScreen({ route }) {
-    const { url, title } = route.params;
-    const navigation = useNavigation();
-    const theme = useTheme();
-
-    return (
-        <SafeAreaView style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-            <Appbar.Header style={styles.appBar}>
-                <Appbar.Action icon={() => <ArrowLeft size={24} color={theme.colors.onPrimary} />} onPress={() => navigation.goBack()} />
-                <Appbar.Content title={title || "Webview"} titleStyle={styles.appBarTitle} />
-            </Appbar.Header>
-            <WebView
-                source={{ uri: url }}
-                style={styles.webview}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
-                renderLoading={() => (
-                    <View style={localStyles.loadingContainer}>
-                        <CircularText text="BRACU*360*" />
-                    </View>
-                )}
-                onError={(syntheticEvent) => {
-                    const { nativeEvent } = syntheticEvent;
-                    Alert.alert("Webview Error", `Failed to load: ${nativeEvent.description}`);
-                    navigation.goBack();
-                }}
-            />
-        </SafeAreaView>
-    );
 }
 
 // --- Website Adding Form Screen ---
@@ -127,11 +94,14 @@ function WebsiteAddScreen() {
 function WebviewListScreen() {
     const navigation = useNavigation();
     const theme = useTheme();
-
+    const cardColors = ['#cce5cc', '#ffe0b3', '#b3d9ff', '#b3ffe0', '#ffe6ff'];
+    
     const websites = [
+        { name: 'Freelabs', url: 'https://freelabs.pages.dev/?fbclid=IwY2xjawMZidNleHRuA2FlbQIxMABicmlkETFKbmt3SGdhd1Z3QUNQSnc2AR56a8vwBRg7XFmSqGzrus_9kDtNQnEN3UDlw9WzL3ilm023hWOU6amIk5GJcg_aem_ouJteWW86PflxUs3kwz3pw' },
         { name: 'PrePre-Reg', url: 'https://preprereg.vercel.app/' },
         { name: 'Connect Unlocked', url: 'https://usis.eniamza.com/n' },
         { name: 'BRACU Official', url: 'https://www.bracu.ac.bd/' },
+        { name: 'CSE Detailed List', url: 'https://docs.google.com/spreadsheets/d/1myGvBOTsxcMATsz_uTzr-kBpA0xn1291jO4p8_2hIxw/edit?usp=drivesdk' },
         { name: 'CSE SDS', url: 'https://cse.sds.bracu.ac.bd/' },
         { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },
         { name: 'BRACU Library', url: 'https://library.bracu.ac.bd/' },
@@ -152,9 +122,16 @@ function WebviewListScreen() {
                         <TouchableOpacity
                             key={index}
                             style={styles.webviewCardWrapper}
-                            onPress={() => navigation.navigate('WebviewDetail', { url: site.url, title: site.name })}
+                            onPress={() => {
+                                // Conditional logic to open the Google Sheet in the external browser
+                                if (site.name === 'CSE Detailed List') {
+                                    Linking.openURL(site.url);
+                                } else {
+                                    navigation.navigate('WebviewDetail', { url: site.url, title: site.name });
+                                }
+                            }}
                         >
-                            <Card style={[styles.webviewCard, { backgroundColor: theme.colors.surfaceVariant }]}>
+                            <Card style={[styles.webviewCard, { backgroundColor: cardColors[index % cardColors.length] }]}>
                                 <Card.Content>
                                     <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>{site.name}</Title>
                                     <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>
@@ -174,6 +151,40 @@ function WebviewListScreen() {
         </View>
     );
 }
+
+// --- Webview Detail Screen ---
+function WebviewDetailScreen({ route }) {
+    const { url, title } = route.params;
+    const navigation = useNavigation();
+    const theme = useTheme();
+
+    return (
+        <SafeAreaView style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+            <Appbar.Header style={styles.appBar}>
+                <Appbar.Action icon={() => <ArrowLeft size={24} color={theme.colors.onPrimary} />} onPress={() => navigation.goBack()} />
+                <Appbar.Content title={title || "Webview"} titleStyle={styles.appBarTitle} />
+            </Appbar.Header>
+            <WebView
+                source={{ uri: url }}
+                style={styles.webview}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+                startInLoadingState={true}
+                renderLoading={() => (
+                    <View style={localStyles.loadingContainer}>
+                        <CircularText text="BRACU*360*" />
+                    </View>
+                )}
+                onError={(syntheticEvent) => {
+                    const { nativeEvent } = syntheticEvent;
+                    Alert.alert("Webview Error", `Failed to load: ${nativeEvent.description}`);
+                    navigation.goBack();
+                }}
+            />
+        </SafeAreaView>
+    );
+}
+
 
 // --- Main WebViews Component ---
 const WebViews = () => {

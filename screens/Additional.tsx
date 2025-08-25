@@ -18,6 +18,8 @@ const AdditionalScreen = () => {
     const [showImportantMails, setShowImportantMails] = useState(false);
     const [isQrModalVisible, setIsQrModalVisible] = useState(false);
     const [showFacultyArchive, setShowFacultyArchive] = useState(false);
+    const cardColors = ['#cce5cc', '#ffe0b3', '#b3d9ff', '#b3ffe0'];
+
     
     // State for the CSE WebView and "Others" faculty list
     const [showOthersFaculty, setShowOthersFaculty] = useState(false);
@@ -36,7 +38,7 @@ const AdditionalScreen = () => {
     const [isCseLoading, setIsCseLoading] = useState(true);
 
     const features = [
-        { name: 'Hall of Fame', action: () => handleFeatureAction(() => Alert.alert('Feature Coming Soon', 'Hall of Fame BracU')) },
+        // { name: 'Hall of Fame', action: () => handleFeatureAction(() => Alert.alert('Feature Coming Soon', 'Hall of Fame BracU')) },
         { name: 'Faculty Finder', action: () => handleFeatureAction(() => Alert.alert('Feature Coming Soon', 'Find Where is your Faculty')) },
         { name: 'Faculty Email Archive', action: () => handleFeatureAction(() => setShowFacultyArchive(true)) },
         { name: 'Bus Schedule', action: () => handleFeatureAction(() => setShowBusSchedule(true)) },
@@ -444,31 +446,31 @@ const AdditionalScreen = () => {
         }
 
         return (
-            <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
-                <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
-                    <Appbar.BackAction onPress={() => { setShowFacultyArchive(false); }} color={theme.colors.onPrimary} />
-                    <Appbar.Content title="Faculty Email Archive" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
-                </Appbar.Header>
-                <ScrollView contentContainerStyle={styles.paddingContainer}>
-                    <Card style={[styles.webviewCard, { backgroundColor: theme.colors.surfaceVariant, marginBottom: 15, height: 120 }]}>
-                        <TouchableOpacity onPress={() => setShowCseFacultyWebview(true)}>
-                            <Card.Content style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                                <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>CSE</Title>
-                                <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>View CSE faculty emails</Paragraph>
-                            </Card.Content>
-                        </TouchableOpacity>
-                    </Card>
-                    <Card style={[styles.webviewCard, { backgroundColor: theme.colors.surfaceVariant, marginBottom: 15, height: 120 }]}>
-                        <TouchableOpacity onPress={() => setShowOthersFaculty(true)}>
-                            <Card.Content style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                                <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>Others</Title>
-                                <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>View other faculty emails</Paragraph>
-                            </Card.Content>
-                        </TouchableOpacity>
-                    </Card>
-                </ScrollView>
-            </View>
-        );
+    <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+        <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
+            <Appbar.BackAction onPress={() => { setShowFacultyArchive(false); }} color={theme.colors.onPrimary} />
+            <Appbar.Content title="Faculty Email Archive" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
+        </Appbar.Header>
+        <ScrollView contentContainerStyle={styles.paddingContainer}>
+            <Card style={[styles.webviewCard, { backgroundColor: cardColors[0], marginBottom: 15, height: 120 }]}>
+                <TouchableOpacity onPress={() => setShowCseFacultyWebview(true)}>
+                    <Card.Content style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+                        <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>CSE</Title>
+                        <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>View CSE faculty emails</Paragraph>
+                    </Card.Content>
+                </TouchableOpacity>
+            </Card>
+            <Card style={[styles.webviewCard, { backgroundColor: cardColors[1], marginBottom: 15, height: 120 }]}>
+                <TouchableOpacity onPress={() => setShowOthersFaculty(true)}>
+                    <Card.Content style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+                        <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>Others</Title>
+                        <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>View other faculty emails</Paragraph>
+                    </Card.Content>
+                </TouchableOpacity>
+            </Card>
+        </ScrollView>
+    </View>
+);
     }
     
     // The main screen remains the same
@@ -520,75 +522,77 @@ const AdditionalScreen = () => {
                         </View>
                     </Modal>
 
-                    <ScrollView contentContainerStyle={[styles.paddingContainer, { paddingBottom: 80 }]}>
-                        <Searchbar
-                            placeholder="Search features"
-                            onChangeText={setSearchQuery}
-                            value={searchQuery}
-                            style={{ marginBottom: 16 }}
-                            ref={searchbarRef}
-                        />
+<ScrollView contentContainerStyle={[styles.paddingContainer, { paddingBottom: 80 }]}>
+    <Searchbar
+        placeholder="Search features"
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        style={{ marginBottom: 16 }}
+        ref={searchbarRef}
+    />
 
-                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
-                            All Features
-                        </Text>
-                        <View style={styles.webviewGrid}>
-                            {filteredFeatures.map((feature, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={styles.webviewCardWrapper}
-                                    onPress={feature.action}
-                                >
-                                    <Card style={[styles.webviewCard, { backgroundColor: theme.colors.surfaceVariant }]}>
-                                        <Card.Content style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                            <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>{feature.name}</Title>
-                                            <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>
-                                                {feature.name === 'Bus Schedule' || feature.name === 'Important Mails' || feature.name === 'Faculty Email Archive' || feature.name === 'Club Showcase' ? 'View here' : 'Coming soon'}
-                                            </Paragraph>
-                                        </Card.Content>
-                                    </Card>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+    <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
+        All Features
+    </Text>
+    <View style={styles.webviewGrid}>
+        {filteredFeatures.map((feature, index) => (
+            <TouchableOpacity
+                key={index}
+                style={styles.webviewCardWrapper}
+                onPress={feature.action}
+            >
+                <Card style={[styles.webviewCard, { backgroundColor: cardColors[index % cardColors.length] }]}>
+                    <Card.Content style={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>{feature.name}</Title>
+                    {feature.name === 'Bus Schedule' || feature.name === 'Important Mails' || feature.name === 'Faculty Email Archive' || feature.name === 'Club Showcase' ? null : (
+                        <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>
+                            Coming soon
+                        </Paragraph>
+                    )}
+                    </Card.Content>
+                </Card>
+            </TouchableOpacity>
+        ))}
+    </View>
 
-                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>
-                            Feedback
-                        </Text>
-                        <Card style={[styles.profileCard, { backgroundColor: '#000' }]}>
-                            <Card.Content>
-                                <Title style={{ color: '#fff' }}>We value your feedback</Title>
-                                <Paragraph style={{ color: '#ccc', marginBottom: 10 }}>
-                                    Share your thoughts or suggestions with us.
-                                </Paragraph>
+    <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>
+        Feedback
+    </Text>
+    <Card style={[styles.profileCard, { backgroundColor: '#000' }]}>
+        <Card.Content>
+            <Title style={{ color: '#fff' }}>We value your feedback</Title>
+            <Paragraph style={{ color: '#ccc', marginBottom: 10 }}>
+                Share your thoughts or suggestions with us.
+            </Paragraph>
 
-                                <Text style={{ color: '#fff', marginBottom: 5 }}>ID (Optional)</Text>
-                                <TextInput
-                                    value={feedbackName}
-                                    onChangeText={setFeedbackName}
-                                    style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, marginBottom: 15 }}
-                                    placeholderTextColor="#777"
-                                />
-                                <Text style={{ color: '#fff', marginBottom: 5 }}>Feedback</Text>
-                                <TextInput
-                                    value={feedbackMessage}
-                                    onChangeText={setFeedbackMessage}
-                                    multiline
-                                    style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, height: 100 }}
-                                    placeholderTextColor="#777"
-                                />
+            <Text style={{ color: '#fff', marginBottom: 5 }}>ID (Optional)</Text>
+            <TextInput
+                value={feedbackName}
+                onChangeText={setFeedbackName}
+                style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, marginBottom: 15 }}
+                placeholderTextColor="#777"
+            />
+            <Text style={{ color: '#fff', marginBottom: 5 }}>Feedback</Text>
+            <TextInput
+                value={feedbackMessage}
+                onChangeText={setFeedbackMessage}
+                multiline
+                style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, height: 100 }}
+                placeholderTextColor="#777"
+            />
 
-                                <PaperButton
-                                    mode="contained"
-                                    onPress={handleFeedbackSubmit}
-                                    loading={isSubmitting}
-                                    style={{ marginTop: 15, backgroundColor: theme.colors.primary }}
-                                    labelStyle={{ color: theme.colors.onPrimary }}
-                                >
-                                    Submit
-                                </PaperButton>
-                            </Card.Content>
-                        </Card>
-                    </ScrollView>
+            <PaperButton
+                mode="contained"
+                onPress={handleFeedbackSubmit}
+                loading={isSubmitting}
+                style={{ marginTop: 15, backgroundColor: theme.colors.primary }}
+                labelStyle={{ color: theme.colors.onPrimary }}
+            >
+                Submit
+            </PaperButton>
+        </Card.Content>
+    </Card>
+</ScrollView>
 
                     <QrScannerModal
                         visible={isQrModalVisible}
