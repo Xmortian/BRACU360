@@ -91,6 +91,7 @@ function WebsiteAddScreen() {
 }
 
 // --- Webview List Screen ---
+// Webview List Screen
 function WebviewListScreen() {
     const navigation = useNavigation();
     const theme = useTheme();
@@ -106,11 +107,14 @@ function WebviewListScreen() {
         { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },
         { name: 'BRACU Library', url: 'https://library.bracu.ac.bd/' },
         { name: 'BRACU Express', url: 'https://bracuexpress.com/' },
+        // --- ADDITION: New external link for the store ---
+        { name: 'Visit our store', url: 'https://www.facebook.com/Tridenta.giftshop' },
     ];
 
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background, flex: 1 }]}>
             <Appbar.Header style={styles.appBar}>
+                <Appbar.BackAction onPress={() => navigation.goBack()} />
                 <Appbar.Content title="Web Links" titleStyle={styles.appBarTitle} />
             </Appbar.Header>
             <ScrollView contentContainerStyle={[styles.paddingContainer, { paddingBottom: 80 }]}>
@@ -123,9 +127,12 @@ function WebviewListScreen() {
                             key={index}
                             style={styles.webviewCardWrapper}
                             onPress={() => {
-                                // Conditional logic to open the Google Sheet in the external browser
-                                if (site.name === 'CSE Detailed List') {
-                                    Linking.openURL(site.url);
+                                // Updated condition to handle the new store link
+                                if (site.name === 'CSE Detailed List' || site.name === 'Visit our store') {
+                                    Linking.openURL(site.url).catch(err => {
+                                        console.error('Failed to open URL:', err);
+                                        Alert.alert("Error", "Could not open link. Please check the URL.");
+                                    });
                                 } else {
                                     navigation.navigate('WebviewDetail', { url: site.url, title: site.name });
                                 }
@@ -151,7 +158,6 @@ function WebviewListScreen() {
         </View>
     );
 }
-
 // --- Webview Detail Screen ---
 function WebviewDetailScreen({ route }) {
     const { url, title } = route.params;
@@ -226,13 +232,6 @@ const localStyles = StyleSheet.create({
         alignItems: 'center',
         position: 'relative',
         transform: [{ rotate: '0deg' }],
-    },
-    circularLetterContainer: {
-        position: 'absolute',
-        left: '50%',
-        top: '50%',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     circularLetterText: {
         fontSize: 24,
