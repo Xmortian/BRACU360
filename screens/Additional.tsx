@@ -234,12 +234,13 @@ const courses = {
         { name: 'Videos', url: 'https://youtube.com/playlist?list=PLjn0GYNs9zvyZQmXMV2NtXSvk6PYz_BG4', type: 'Course Video' },
         { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PL63IQkIty91joaYSai_5431PQ9BP5pvew', type: 'Course Video' },
         { name: 'Videos', url: 'https://youtube.com/playlist?list=PLx3F9dOqe5Km3kji6OlQ0S-MCmhUKt9yp&si=gJ6tSxlMYbzVZHqj', type: 'Course Video' },
+        { name: 'Slide + Assgin + Quiz Solu', url: 'https://www.playbook.com/s/bdsketch/fBP22TKaBBmPgQ1zx9CX6Xrf', type: 'Playbook' },
+
       ],
     },
     Mat216: {
       resources: [
         { name: 'Videos', url: 'https://youtube.com/playlist?list=PLMZnvBHNk2GXZtWLVxnWfGAAlrz3wvzf9', type: 'Course Video' },
-        { name: 'Slide + Assgin + Quiz Solu', url: 'https://www.playbook.com/s/bdsketch/fBP22TKaBBmPgQ1zx9CX6Xrf', type: 'Playbook' },
       ],
     },
     Sta201: {
@@ -461,6 +462,29 @@ const courses = {
         { name: 'General', url: 'https://drive.google.com/drive/folders/1W2Do5ztA0J4ivVoG1torWj3l5lzmCKEt', type: 'Drive Folder' },
       ],
     },
+        Cse474: {
+      resources: [
+        { name: 'External Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_JQaKidqDU0eIklFg3piADM', type: 'Course Video' },
+        { name: 'External Project Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IK7oOEh4-qLoU4CpWGilEH', type: 'Course Video' },
+      ],
+    },
+    Cse481: {
+      resources: [
+        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL-lCYwFS3hp2T0MAwY0MmQpWaQF0pmsJv', type: 'Course Video' },
+      ],
+    },
+    'Cse482 / PHY430': {
+      resources: [
+        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL-lCYwFS3hp1yy4K5o5yFT7BFn5bH1s8m&si=k7aHGHGX7FgN-lxX', type: 'Course Video' },
+        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLvj5w6iNZqVgt_bqYyfAbZb0uD4SxtZoD', type: 'Course Video' },
+      ],
+    },
+    'Code n quest': {
+      resources: [
+        { name: 'Channel', url: 'https://www.youtube.com/@codeNquest-q2j/videos', type: 'YouTube Channel' },
+      ],
+    },
+
 };
 
 const AdditionalScreen = () => {

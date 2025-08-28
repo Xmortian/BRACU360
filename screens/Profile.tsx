@@ -65,7 +65,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
         {
             question: "Choose one of the following:",
             options: [
-                { text: "Bunker Hills", house: "Danshiri" },
+                { text: "Mont Blanc", house: "Danshiri" },
                 { text: "Hand of the Shadows", house: "Chayaneer" },
                 { text: "Mid Fortress", house: "Moyurpankhi" },
                 { text: "Stargazer", house: "Drubotara" },
