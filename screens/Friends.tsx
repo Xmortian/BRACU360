@@ -345,6 +345,14 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
 // --- FriendsScreen Component ---
 const FriendsScreen = () => {
     const theme = useTheme();
+
+    const colorPalette = {
+        semester: '#A7F3D0',
+        courses: '#FDE68A',
+        status: '#BFDBFE',
+        contact: '#D1FAE5',
+    };
+
     const [friends, setFriends] = useState([
         { id: '1', name: 'Alice Smith', courses: 'MAT216, CSE230, PHY110', status: 'Off day', contact: '01234567890', semester: 'Summer 2025', routineImageUri: 'https://via.placeholder.com/300/00C853/FFFFFF?text=Routine+Alice' },
         { id: '2', name: 'Bob Johnson', courses: 'CSE470, EEE300', status: 'In a Class Gap(next class in 1 hour)', contact: '01234567891', semester: 'Fall 2024', routineImageUri: 'https://via.placeholder.com/300/FF5733/FFFFFF?text=Routine+Bob' },
@@ -402,53 +410,75 @@ const FriendsScreen = () => {
         );
     };
 
-    const renderFriendItem = ({ item }) => (
-        <Card style={[uiStyles.friendCard, { backgroundColor: theme.colors.surface }]}>
-            <Card.Content style={uiStyles.friendCardContent}>
-                <View style={uiStyles.cardActionsTopRight}>
-                    <TouchableOpacity onPress={() => handleEditFriend(item)} style={uiStyles.cardActionButton}>
-                        <Edit3 size={24} color={theme.colors.onSurfaceVariant} />
-                    </TouchableOpacity>
-                </View>
-                <View style={{ flex: 1, marginRight: 60 }}>
-                    <Title style={{ color: theme.colors.onSurface }}>{item.name}</Title>
-                    <Paragraph style={{ color: '#00C853', fontWeight: 'bold' }}>
-                        Semester Activated: {item.semester}
-                    </Paragraph>
-                    <Paragraph style={[styles.friendCourses, { color: theme.colors.onSurfaceVariant }]}>
-                        Course this sem: {item.courses}
-                    </Paragraph>
-                    <Text style={[styles.friendStatus, { color: theme.colors.primary }]}>
-                        Current Status: {item.status}
-                    </Text>
-                    {item.contact && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-                            <Text style={{ color: theme.colors.onSurfaceVariant, marginRight: 8 }}>
-                                Contact: {item.contact}
-                            </Text>
-                            <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.contact}`)}>
-                                <Phone size={20} color={theme.colors.onSurfaceVariant} />
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </View>
-                <View style={uiStyles.cardActionsRightCenter}>
-                    {item.routineImageUri ? (
-                        <TouchableOpacity onPress={() => handleViewRoutine(item.routineImageUri)} style={uiStyles.cardActionButton}>
-                            <Eye size={24} color={theme.colors.onSurfaceVariant} />
+    const renderFriendItem = ({ item }) => {
+        const courses = item.courses.split(',').map(course => ({ key: course.trim(), courseName: course.trim() }));
+    
+        return (
+            <Card style={[uiStyles.friendCard, { backgroundColor: theme.colors.surface }]}>
+                <Card.Content style={uiStyles.friendCardContent}>
+                    <View style={uiStyles.cardActionsTopRight}>
+                        <TouchableOpacity onPress={() => handleEditFriend(item)} style={uiStyles.cardActionButton}>
+                            <Edit3 size={24} color={theme.colors.onSurfaceVariant} />
                         </TouchableOpacity>
-                    ) : (
-                        <Eye size={24} color={theme.colors.backdrop} /> 
-                    )}
-                </View>
-                <View style={uiStyles.cardActionsBottomRight}>
-                    <TouchableOpacity onPress={() => handleDeleteFriend(item.id)} style={uiStyles.cardActionButton}>
-                        <Trash size={24} color={theme.colors.error} />
-                    </TouchableOpacity>
-                </View>
-            </Card.Content>
-        </Card>
-    );
+                    </View>
+                    <View style={{ flex: 1, marginRight: 60 }}>
+                        <Title style={{ color: theme.colors.onSurface }}>{item.name}</Title>
+
+                        <View style={[uiStyles.smallBadge, { backgroundColor: colorPalette.semester, marginTop: 5 }]}>
+                            <Text style={[uiStyles.badgeText, { color: 'black' }]}>
+                                {item.semester}
+                            </Text>
+                        </View>
+
+                        <View style={{ marginTop: 5 }}>
+                            <FlatList
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                data={courses}
+                                renderItem={({ item: courseItem }) => (
+                                    <View style={[uiStyles.courseBadge, { backgroundColor: colorPalette.courses, marginRight: 5 }]}>
+                                        <Text style={[uiStyles.badgeText, { color: 'black' }]}>
+                                            {courseItem.courseName}
+                                        </Text>
+                                    </View>
+                                )}
+                                keyExtractor={courseItem => courseItem.key}
+                            />
+                        </View>
+
+                        <View style={[uiStyles.statusBadge, { backgroundColor: colorPalette.status, marginTop: 10 }]}>
+                            <Text style={[uiStyles.badgeText, { color: 'black' }]}>
+                                {item.status}
+                            </Text>
+                        </View>
+
+                        {item.contact && (
+                            <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.contact}`)} style={[uiStyles.contactBadge, { backgroundColor: colorPalette.contact, marginTop: 15, flexDirection: 'row', alignItems: 'center' }]}>
+                                <Text style={[uiStyles.badgeText, { color: 'black', marginRight: 8 }]}>
+                                    {item.contact}
+                                </Text>
+                                <Phone size={20} color='black' />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    <View style={uiStyles.cardActionsRightCenter}>
+                        {item.routineImageUri ? (
+                            <TouchableOpacity onPress={() => handleViewRoutine(item.routineImageUri)} style={uiStyles.cardActionButton}>
+                                <Eye size={24} color={theme.colors.onSurfaceVariant} />
+                            </TouchableOpacity>
+                        ) : (
+                            <Eye size={24} color={theme.colors.backdrop} /> 
+                        )}
+                    </View>
+                    <View style={uiStyles.cardActionsBottomRight}>
+                        <TouchableOpacity onPress={() => handleDeleteFriend(item.id)} style={uiStyles.cardActionButton}>
+                            <Trash size={24} color={theme.colors.error} />
+                        </TouchableOpacity>
+                    </View>
+                </Card.Content>
+            </Card>
+        );
+    };
 
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
@@ -601,6 +631,38 @@ const uiStyles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    // Styles for the badges
+    smallBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 15,
+        paddingVertical: 5,
+        borderRadius: 20,
+        marginTop: 5,
+    },
+    courseBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 15,
+        alignSelf: 'flex-start',
+    },
+    statusBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 15,
+        paddingVertical: 5,
+        borderRadius: 10,
+        marginTop: 10,
+        width: 200, // Fixed width
+    },
+    contactBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 15,
+        paddingVertical: 5,
+        borderRadius: 10,
+    },
+    badgeText: {
+        fontWeight: 'bold',
+        fontSize: 14,
     },
 });
 

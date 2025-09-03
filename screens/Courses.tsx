@@ -1,23 +1,25 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Modal, FlatList, Image,
-  Platform, StatusBar, Alert
+  Platform, StatusBar, Alert, Dimensions
 } from 'react-native';
 import {
   Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme, TextInput
 } from 'react-native-paper';
-import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, Trash } from 'lucide-react-native';
+import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, Trash, Check, X } from 'lucide-react-native';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker'; 
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import ImageViewing from 'react-native-image-viewing';
-import * as Notifications from 'expo-notifications'; // New import for notifications
+import * as Notifications from 'expo-notifications';
 
-import styles from '../styles/styles'; // ← your existing shared styles
+import styles from '../styles/styles';
+
+const { width, height } = Dimensions.get('window');
 
 // ----------------------
 // Helpers: saving photos
@@ -50,7 +52,7 @@ const savePhotoForCourseAsync = async (tempUri, courseName) => {
     }
   }
 
-  return newPath; // return app path so the app can persist & show
+  return newPath; 
 };
 
 const listCoursePhotosAsync = async (courseName) => {
@@ -78,7 +80,7 @@ const deleteCoursePhotoAsync = async (uri) => {
 };
 
 // ------------------------------------
-// Custom Alert/Error Modal (unchanged)
+// Custom Alert/Error Modal
 // ------------------------------------
 const CustomAlertModal = ({ visible, onClose, title, message }) => {
   const theme = useTheme();
@@ -109,14 +111,13 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
   const theme = useTheme();
   const [deadlineName, setDeadlineName] = useState('');
   const [deadlineDate, setDeadlineDate] = useState(new Date());
-  const [reminderDays, setReminderDays] = useState(null); // Default to null for no reminder
+  const [reminderDays, setReminderDays] = useState(null);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [alertModalVisible, setAlertModalVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertTitle, setAlertTitle] = useState('');
-  // Added null to the reminder options for 'No Reminder'
   const reminderOptions = [null, 0, 1, 2, 3, 4, 5, 6, 7];
 
   const showAlert = (title, message) => {
@@ -126,18 +127,13 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
   };
 
   const scheduleDeadlineNotification = async (deadlineName, deadlineDate, reminderDays) => {
-    // Only schedule if a reminder is selected
-    if (reminderDays === null) return; 
-
+    if (reminderDays === null) return;
     const triggerDate = new Date(deadlineDate);
-    // If reminder is for 0 days, the trigger is exactly at the deadline.
-    // If it's for N days, subtract N days from the deadline date, preserving the time.
     if (reminderDays > 0) {
       triggerDate.setDate(triggerDate.getDate() - reminderDays);
     }
-    
-    // Only schedule if the trigger is in the future
-    if (triggerDate.getTime() > new Date().getTime()) { 
+
+    if (triggerDate.getTime() > new Date().getTime()) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "Upcoming Deadline Reminder!",
@@ -162,10 +158,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
       showAlert('Error', 'Please select a deadline date.');
       return;
     }
-
-    // Schedule the notification before saving the deadline
     await scheduleDeadlineNotification(deadlineName, deadlineDate, reminderDays);
-
     onAddDeadline(courseId, {
       id: Math.random().toString(),
       name: deadlineName,
@@ -294,8 +287,8 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
 const CameraModal = ({ visible, onClose, onCapture }) => {
   const cameraRef = useRef(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [flash, setFlash] = useState('off'); // "off" | "on"
-  const [zoom, setZoom] = useState(0); // 0..1
+  const [flash, setFlash] = useState('off');
+  const [zoom, setZoom] = useState(0);
 
   useEffect(() => {
     if (!permission) requestPermission();
@@ -313,10 +306,9 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
     }
   };
 
-  // Pinch-to-zoom
   const pinchGesture = Gesture.Pinch()
     .onUpdate((e) => {
-      let next = zoom + (e.scale - 1) * 0.06; // sensitivity
+      let next = zoom + (e.scale - 1) * 0.06;
       next = Math.max(0, Math.min(1, next));
       setZoom(next);
     });
@@ -344,7 +336,6 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
           <CameraView ref={cameraRef} style={{ flex: 1 }} flash={flash} zoom={zoom} />
         </GestureDetector>
 
-        {/* Top bar */}
         <View style={cameraStyles.topBar}>
           <TouchableOpacity onPress={onClose} style={cameraStyles.iconButton}>
             <Ionicons name="close" size={28} color="white" />
@@ -354,7 +345,6 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom bar */}
         <View style={cameraStyles.bottomBar}>
           <TouchableOpacity onPress={() => setZoom((z) => Math.max(0, +(z - 0.1).toFixed(3)))} style={cameraStyles.iconButton}>
             <Ionicons name="remove" size={26} color="white" />
@@ -376,7 +366,7 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
 // ----------------------
 const NotesModal = ({ visible, onClose, courseName, onDeleteLocal }) => {
   const theme = useTheme();
-  const [images, setImages] = useState([]); // file:// uris
+  const [images, setImages] = useState([]);
   const [viewerVisible, setViewerVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -399,7 +389,6 @@ const NotesModal = ({ visible, onClose, courseName, onDeleteLocal }) => {
     const uri = images[index];
     await deleteCoursePhotoAsync(uri);
     onDeleteLocal?.(uri);
-    // refresh
     const uris = await listCoursePhotosAsync(courseName);
     setImages(uris);
   };
@@ -471,15 +460,13 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
     setAlertMessage(message);
     setAlertModalVisible(true);
   };
-  
+
   const scheduleDeadlineNotification = async (deadlineName, deadlineDate, reminderDays) => {
-    if (reminderDays === null) return; 
-    
+    if (reminderDays === null) return;
     const triggerDate = new Date(deadlineDate);
     if (reminderDays > 0) {
       triggerDate.setDate(triggerDate.getDate() - reminderDays);
     }
-    
     if (triggerDate.getTime() > new Date().getTime()) {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -496,7 +483,6 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
     }
   };
 
-
   const handleSave = async () => {
     if (!deadlineName) {
       showAlert('Error', 'Please enter a name for the deadline.');
@@ -506,9 +492,7 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
       showAlert('Error', 'Please select a deadline date.');
       return;
     }
-
     await scheduleDeadlineNotification(deadlineName, deadlineDate, reminderDays);
-
     onAddDeadline({
       id: Math.random().toString(),
       name: deadlineName,
@@ -637,12 +621,11 @@ const CoursesScreen = () => {
   const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
-  // New state for semester-wise data and dropdown
   const [allSemestersData, setAllSemestersData] = useState({
     'Summer 2025': [
-      { id: '1', courseName: 'Programming Language I', notes: [], deadlines: [{ id: 'd1', name: 'Assignment 2', date: '2025-08-08T18:00:00.000Z', reminderDays: 2 }] },
+      { id: '1', courseName: 'Programming Language I', notes: [], deadlines: [{ id: 'd1', name: 'Assignment 2', date: '2025-09-08T18:00:00.000Z', reminderDays: 2 }] },
       { id: '2', courseName: 'Introduction to Psychology', notes: [], deadlines: [] },
-      { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-08-17T12:00:00.000Z', reminderDays: 7 }] },
+      { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-09-17T12:00:00.000Z', reminderDays: 7 }] },
       { id: '4', courseName: 'Object-Oriented Programming', notes: [], deadlines: [] },
     ],
     'Spring 2025': [
@@ -676,7 +659,6 @@ const CoursesScreen = () => {
     }));
   };
 
-  // Called when a photo is captured (temp), we persist then update state
   const handleCapture = async (tempUri) => {
     if (!selectedCourse?.courseName) return;
     const finalPath = await savePhotoForCourseAsync(tempUri, selectedCourse.courseName);
@@ -703,16 +685,6 @@ const CoursesScreen = () => {
     setIsNotesModalVisible(true);
   };
 
-  const calculateTimeLeft = (deadlineDate) => {
-    const now = new Date();
-    const deadline = new Date(deadlineDate);
-    const diffInMs = deadline.getTime() - now.getTime();
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    if (diffInHours > 0) return `${diffInHours} hours left`;
-    return 'Passed';
-  };
-
-  // New function to handle notification permissions
   const registerForPushNotificationsAsync = async () => {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -728,11 +700,66 @@ const CoursesScreen = () => {
     }
   };
 
-  // Register for notifications when the component first loads
+  const calculateTimeLeft = (deadlineDate) => {
+    const now = new Date();
+    const deadline = new Date(deadlineDate);
+    const diffInMs = deadline.getTime() - now.getTime();
+    if (diffInMs <= 0) {
+      return 'Passed';
+    }
+
+    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    let timeLeftString = '';
+    if (days > 0) {
+      timeLeftString += `${days}d `;
+    }
+    if (hours > 0) {
+      timeLeftString += `${hours}h `;
+    }
+    if (minutes > 0) {
+      timeLeftString += `${minutes}m`;
+    }
+
+    return timeLeftString.trim() || 'Less than a minute';
+  };
+
   useEffect(() => {
     registerForPushNotificationsAsync();
   }, []);
 
+  const handleMarkAsDone = (courseId, deadlineId) => {
+    Notifications.cancelAllScheduledNotificationsAsync({ id: deadlineId });
+    setAllSemestersData((prev) => ({
+      ...prev,
+      [selectedSemester]: prev[selectedSemester].map((c) => {
+        if (c.id === courseId) {
+          const updatedDeadlines = c.deadlines.map((d) =>
+            d.id === deadlineId ? { ...d, status: 'Done' } : d
+          );
+          return { ...c, deadlines: updatedDeadlines };
+        }
+        return c;
+      }),
+    }));
+  };
+
+  const handleDeleteDeadline = (courseId, deadlineId) => {
+    Notifications.cancelAllScheduledNotificationsAsync({ id: deadlineId });
+    setAllSemestersData((prev) => ({
+      ...prev,
+      [selectedSemester]: prev[selectedSemester].map((c) => {
+        if (c.id === courseId) {
+          const updatedDeadlines = c.deadlines.filter((d) => d.id !== deadlineId);
+          return { ...c, deadlines: updatedDeadlines };
+        }
+        return c;
+      }),
+    }));
+  };
+  
   const renderCourseItem = ({ item }) => (
     <Card style={[styles.courseCard, { backgroundColor: theme.colors.surface, marginBottom: 10, borderRadius: 12 }]}>
       <Card.Content>
@@ -740,11 +767,32 @@ const CoursesScreen = () => {
 
         {item.deadlines.length > 0 ? (
           item.deadlines.map((deadline) => (
-            <View key={deadline.id} style={{ marginBottom: 10 }}>
-              <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>{deadline.name}</Paragraph>
-              <Paragraph style={{ color: calculateTimeLeft(deadline.date) === 'Passed' ? theme.colors.error : theme.colors.primary }}>
-                {calculateTimeLeft(deadline.date)}
-              </Paragraph>
+            <View key={deadline.id} style={{ marginBottom: 15 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 10 }}>
+                  <Text style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold', textDecorationLine: deadline.status === 'Done' ? 'line-through' : 'none' }}>
+                    {deadline.name}
+                  </Text>
+                  {deadline.status !== 'Done' && (
+                    <Text style={{ color: calculateTimeLeft(deadline.date) === 'Passed' ? theme.colors.error : theme.colors.primary, marginLeft: 10, textDecorationLine: 'none' }}>
+                      {calculateTimeLeft(deadline.date)}
+                    </Text>
+                  )}
+                </View>
+                <Text style={{ color: theme.colors.onSurfaceVariant, textDecorationLine: 'none' }}>
+                  {new Date(deadline.date).toLocaleDateString()} {new Date(deadline.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
+                {deadline.status !== 'Done' && (
+                  <TouchableOpacity onPress={() => handleMarkAsDone(item.id, deadline.id)} style={{ marginRight: 15 }}>
+                    <Check size={24} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => handleDeleteDeadline(item.id, deadline.id)}>
+                  <X size={24} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         ) : (
@@ -783,11 +831,10 @@ const CoursesScreen = () => {
         contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
         ListHeaderComponent={() => (
           <View>
-            {/* Semester Dropdown */}
-            <TouchableOpacity 
-              onPress={() => setIsSemesterDropdownVisible(true)} 
+            <TouchableOpacity
+              onPress={() => setIsSemesterDropdownVisible(true)}
               style={[
-                styles.dropdownButton, 
+                styles.dropdownButton,
                 { marginTop: 10, borderColor: theme.colors.outline, backgroundColor: theme.colors.surface }
               ]}
             >
@@ -828,7 +875,6 @@ const CoursesScreen = () => {
         )}
       />
 
-      {/* Modals */}
       <DeadlineModal
         visible={isDeadlineModalVisible}
         onClose={() => setIsDeadlineModalVisible(false)}
@@ -855,7 +901,6 @@ const CoursesScreen = () => {
         onAddDeadline={handleAddGeneralDeadline}
       />
 
-      {/* Semester Selection Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -894,10 +939,6 @@ const CoursesScreen = () => {
 
 export default CoursesScreen;
 
-// ----------------------
-// Minimal camera UI styles
-// (kept separate to not clash with your shared `styles` file)
-// ----------------------
 const cameraStyles = {
   centered: {
     flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'black'

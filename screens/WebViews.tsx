@@ -98,16 +98,16 @@ function WebviewListScreen() {
     const cardColors = ['#cce5cc', '#ffe0b3', '#b3d9ff', '#b3ffe0', '#ffe6ff'];
     
     const websites = [
-        { name: 'Freelabs', url: 'https://freelabs.pages.dev/?fbclid=IwY2xjawMZidNleHRuA2FlbQIxMABicmlkETFKbmt3SGdhd1Z3QUNQSnc2AR56a8vwBRg7XFmSqGzrus_9kDtNQnEN3UDlw9WzL3ilm023hWOU6amIk5GJcg_aem_ouJteWW86PflxUs3kwz3pw' },
         { name: 'PrePre-Reg', url: 'https://preprereg.vercel.app/' },
         { name: 'Connect Unlocked', url: 'https://usis.eniamza.com/n' },
+        { name: 'Freelabs', url: 'https://freelabs.pages.dev/?fbclid=IwY2xjawMZidNleHRuA2FlbQIxMABicmlkETFKbmt3SGdhd1Z3QUNQSnc2AR56a8vwBRg7XFmSqGzrus_9kDtNQnEN3UDlw9WzL3ilm023hWOU6amIk5GJcg_aem_ouJteWW86PflxUs3kwz3pw' },
+        { name: 'Exam Schedule', url:'https://bracuexam.web.app/?fbclid=IwY2xjawMeZ3hleHRuA2FlbQIxMABicmlkETE5Tk01ajZzY2V5cGRybE1qAR7ARQqBX1kLLVnaYaNcriWGkbEYXnwEql3a31AM5l0D985vzLZvMg9xlTCl8g_aem_2zfnXT1Wt0Q1TNpt6eYyNQ'},
         { name: 'BRACU Official', url: 'https://www.bracu.ac.bd/' },
-        { name: 'CSE Detailed List', url: 'https://docs.google.com/spreadsheets/d/1myGvBOTsxcMATsz_uTzr-kBpA0xn1291jO4p8_2hIxw/edit?usp=drivesdk' },
+        { name: 'CSE Faculty Routines', url: 'https://docs.google.com/spreadsheets/d/1myGvBOTsxcMATsz_uTzr-kBpA0xn1291jO4p8_2hIxw/edit?usp=drivesdk' },
         { name: 'CSE SDS', url: 'https://cse.sds.bracu.ac.bd/' },
         { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },
         { name: 'BRACU Library', url: 'https://library.bracu.ac.bd/' },
         { name: 'BRACU Express', url: 'https://bracuexpress.com/' },
-        // --- ADDITION: New external link for the store ---
         { name: 'Visit our store', url: 'https://www.facebook.com/Tridenta.giftshop' },
     ];
 
@@ -119,7 +119,7 @@ function WebviewListScreen() {
             </Appbar.Header>
             <ScrollView contentContainerStyle={[styles.paddingContainer, { paddingBottom: 80 }]}>
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
-                    Quick Access Webviews
+                    Quick Access Websites
                 </Text>
                 <View style={styles.webviewGrid}>
                     {websites.map((site, index) => (
@@ -128,7 +128,7 @@ function WebviewListScreen() {
                             style={styles.webviewCardWrapper}
                             onPress={() => {
                                 // Updated condition to handle the new store link
-                                if (site.name === 'CSE Detailed List' || site.name === 'Visit our store') {
+                                if (site.name === 'CSE Faculty Routines' || site.name === 'Visit our store') {
                                     Linking.openURL(site.url).catch(err => {
                                         console.error('Failed to open URL:', err);
                                         Alert.alert("Error", "Could not open link. Please check the URL.");

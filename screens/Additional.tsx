@@ -4,7 +4,7 @@ import { Appbar, Card, Title, Paragraph, useTheme, Button as PaperButton, List, 
 import { WebView } from 'react-native-webview';
 import styles from '../styles/styles';
 import QrScannerModal from './QrScannerModal';
-import { QrCode, Phone, Mail, Clock } from 'lucide-react-native';
+import { QrCode, Phone, Mail, Clock, Facebook, Github } from 'lucide-react-native';
 import { Linking } from 'react-native';
 import CircularText from '../UI/CirculatText';
 import { useNavigation } from '@react-navigation/native';
@@ -15,478 +15,504 @@ import { faculty } from '../Data/Faculty';
 
 // Hardcoded course data to fix import issues.
 const courses = {
-    Cse110: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE110', type: 'SDS Webview' },
-        { name: 'Drive Lecture', url: 'https://drive.google.com/drive/u/0/folders/1X6AvHdRgXy-oQgIUt9QpqhDGU_IqqP3w', type: 'Drive Folder' },
-        { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfo173BJeLyMZ9KlI7tORwW', type: 'Course Video' },
-        { name: 'Python by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_0V-mjAYlfgk-3VRmFarlzC', type: 'Course Video' },
-        { name: 'Java by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_0KC2-N3hv0V3ib-Z6wKkAy&si=iPUg6XmhB4_0U8Vn', type: 'Course Video' },
-      ],
-    },
-    Cse111: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE111', type: 'SDS Webview' },
-        { name: 'Mixed Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYELRU2IHZNUD0A4UpT8ejWu', type: 'Course Video' },
-        { name: 'SAD', url: 'https://youtube.com/playlist?list=PLaVWjQSl4OrjCnQU00ES3CnimhS0Ii9Ne', type: 'Course Video' },
-        { name: 'SAD(Tracing)', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQc5U2XOYzzTAcyQQLrIktG2', type: 'Course Video' },
-        { name: 'Python by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_3NAwjutgaG0-62d2yjG6qz&si=329s5uuDQX9sPd56', type: 'Course Video' },
-        { name: 'Java by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_3QPWYBje6NqEs3QLj_0vpf&si=BxcwdMNB7M3pZBbm', type: 'Course Video' },
-        { name: 'LAB', url: 'https://docs.google.com/document/d/1gKLmGnWju4fRBWC5OcRCa76zMql0wUA8z0VD3rd1Dvo/edit', type: 'Notes' },
-      ],
-    },
-    Psy101: {
-      resources: [
-        { name: 'AYSHA MISS', url: 'https://www.youtube.com/playlist?list=PL8ruJoNFhcPEwxKM9uPJmqKx26Ktk7dp-', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYF06zBfuyUXVRwIsFyRCtQH', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5WfeQuFa6liwvel5BJWuA_MD&si=ND9uxnWkOpuD5J9X', type: 'Course Video' },
-      ],
-    },
-    Phy101: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYF06zBfuyUXVRwIsFyRCtQH', type: 'Course Video' },
-      ],
-    },
-    Phy111: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfyYxZuKc7V1aw18nZIHgkj', type: 'Course Video' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1cdNSHun3xWlRQ_XmThXRe0CA2QCqw8i0/view?usp=sharing', type: 'Notes' },
-        { name: 'Assignments + Notes', url: 'https://www.playbook.com/s/bdsketch/hJebtwSeyB6Yuy2cXdmnwX4B', type: 'Playbook' },
-        { name: 'Notes', url: 'https://www.playbook.com/s/bdsketch/srFLz7rzJsBrfzgogowHdHZt', type: 'Playbook' },
-      ],
-    },
-    Phy112: {
-      resources: [
-        { name: 'TKT Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQegkOv8qyoy4xW5kZVdFKYF&si=3O26ZFoVVWyvnyfr', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQegkOv8qyoy4xW5kZVdFKYF', type: 'Course Video' },
-        { name: 'Notes', url: 'https://drive.google.com/drive/folders/1EhHA-eEwi7DGSXZtmYWrA2LpAQD3tttS?usp=sharing', type: 'Notes' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLRWEVZnjBLkXeYL6Vn24JSI2uoGvDLhki&si=YSYAJoALQBU1DJ0M', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLWlwBmP9J5xxrdF5VPRqow5nEy0GPcGtC&si=LQrrS8WG9AKMqN78', type: 'Course Video' },
-        { name: 'RDI LAB + Assignment + Notes', url: 'https://drive.google.com/drive/folders/14ayFXOn6Em2V4qBwEzqs0zEo14_H0td4', type: 'Drive Folder' },
-        { name: 'Notes', url: 'https://drive.google.com/drive/folders/1EhHA-eEwi7DGSXZtmYWrA2LpAQD3tttS?usp=sharing', type: 'Notes' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/13vMk-usiLBUTbP_lpd83H9B45MCDpj_g', type: 'Slides' },
-      ],
-    },
-    Mat110: {
-      resources: [
-        { name: 'Bux Videos', url: 'https://drive.google.com/drive/folders/14lB1F_wya4yvnQ9ILYnNCWqzehch_NLM', type: 'Drive Folder' },
-        { name: 'Notes', url: 'https://anotepad.com/notes/6jrq9ffh', type: 'Notes' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wf2ivvurpQ-2zi6kgWGMGo0&si=0GDY8AZ7f1rbiO09', type: 'Course Video' },
-      ],
-    },
-    Mat120: {
-      resources: [
-        { name: 'Reza Sir Videos', url: 'https://www.youtube.com/playlist?list=PLE3MtMBjMVLdrdZzdlzNFDx2cq5CYKWoxIntegral', type: 'Course Video' },
-        { name: 'Sharepoint Folder', url: 'https://gbracuacbd-my.sharepoint.com/:f:/g/personal/shahin_sharukh_anik_g_bracu_ac_bd/Em2EJSKpEMdAoApN0XcZHfcB7usmVlAuuC4MIfdd_yrvww?e=wxqTRA', type: 'Sharepoint Folder' },
-        { name: 'Notes + Assignment + Quiz + Practice Problems', url: 'https://www.playbook.com/s/bdsketch/3JB1ajDWbgnPTaQqSU52gW4j', type: 'Playbook' },
-        { name: 'Notes + Quiz', url: 'https://www.playbook.com/s/bdsketch/xdGqbg588QQZ8t3XXKA8SybD', type: 'Playbook' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1d4RRJ5bYDgj95RGuIxk2-4EHjKZ0xkln/view?usp=sharing', type: 'Notes' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfdK08koMO_YBPy-zTokdN5', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PL7XBjdiQyhKlNOh25PtdLW-R6LKEzC724', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLWJpC15qtfVotLA1C9dAzyFyU4n_RIvwm&si=2-p68Nlz3igiACYr', type: 'Course Video' },
-      ],
-    },
-    Eco101: {
-      resources: [
-        { name: 'RFU Videos', url: 'https://www.youtube.com/playlist?list=PLIIEr6BC1NsT1eieKehF-Q2625w0Q5Lf5', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PL9aZtK5kh5We1lP13o92XXcmCGlYNk6kQ', type: 'Course Video' },
-        { name: 'Mega Folder', url: 'https://mega.nz/folder/X1wQzSAa#z49m2IVcSW7cniXrBsabpw/folder/vxwwHSaZ', type: 'Mega Folder' },
-        { name: 'Bux Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5We1lP13o92XXcmCGlYNk6kQ&si=iXVcJxAW4PHKzF-i', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5WcO3_7f8M4p-D3otJc_qHg0&si=nwsK0UlBw1u-yWbQ', type: 'Course Video' },
-      ],
-    },
-    Eco102: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYEWRssutl6dWd2Pu7CF7QXv&si=OJN6qTqWyAu32pUy', type: 'Course Video' },
-        { name: 'Mixed Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYEWRssutl6dWd2Pu7CF7QXv&si=AvxJPERryds7jkuD', type: 'Course Video' },
-      ],
-    },
-    ENG102: {
-      resources: [
-        { name: 'RS Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_K4f46TegQvTCxpKb9p0VQk&si=REXNrD7fg76IfhgC', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLRJFV3c2qEElGUFHmMaT9TNKFj_POgZle&si=Di42UtQXhcPlOhth', type: 'Course Video' },
-      ],
-    },
-    ANT101: {
-      resources: [
-        { name: 'ZTK Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiHsPiJse4vJImvi8UKm2rBJ', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLOUm6fJiwrYFLCHnZPcQguGqrWZWY6sYa', type: 'Course Video' },
-      ],
-    },
-    BUS201: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYECj1TXWk7JZRazDJCfSO3q', type: 'Course Video' },
-      ],
-    },
-    HUM103: {
-      resources: [
-        { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLBOVh3Vky8Al-OFqWfKpL35qZQslI8e9d', type: 'Course Video' },
-        { name: 'Shaiya Miss Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_JYyOuFUkspcy2pWiUBx5Yo', type: 'Course Video' },
-      ],
-    },
-    FRN101: {
-      resources: [
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_L4LS0eyKAszqI48QuoWIow', type: 'Course Video' },
-      ],
-    },
-    CHE110: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYEqBH-G1Yv0pHtldxHd8ee2', type: 'Course Video' },
-      ],
-    },
-    ENV103: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYHx515beqwd-8f9V_VIYPXCG', type: 'Course Video' },
-      ],
-    },
-    GEO101: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYFSPyVwBHeDtYlPKVuY6NJ0', type: 'Course Video' },
-      ],
-    },
-    EMB101: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLJ8-tNmGjhaqEYdrwK1wcqyXTByKcrXYm&si=nbOaBIlNL6l8IXZz', type: 'Course Video' },
-      ],
-    },
-    ACT201: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYHYSMNtBFjFr-1QcoQaAowu&si=WFy1_q6FacAEpEam', type: 'Course Video' },
-      ],
-    },
-    Cse220: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE220', type: 'SDS Webview' },
-        { name: 'Practice Sheet', url: 'https://drive.google.com/drive/folders/1ADucedBDj_y72M8wuF9_JZ9TcBvjCuGp', type: 'Practice Sheet' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1d1BUDFxtOHKGwO48KveePmW0faRffSYb/view?fbclid=IwAR2Z7sReVTdJp07RjPag7Nz9Vj5QKofe2HEF55ptLirEQNEabcSmk8CZfnk', type: 'Notes' },
-        { name: 'Notes + Slides + Practice sheet + Assignment', url: 'https://drive.google.com/drive/folders/1J7IZl37KdoQRPq9M7sfg93dVoB1gULk_?usp=share_link', type: 'Drive Folder' },
-        { name: 'Course Materials', url: 'https://drive.google.com/drive/folders/1ZvnnNMjz3AN4r2wJ-xM1BULIDCuADM0I', type: 'Drive Folder' },
-        { name: 'Midterm Materials', url: 'https://drive.google.com/drive/folders/1pJ1QOW7ytfZd6Sn8WtsP2H7N4c0air4e?fbclid=IwY2xjawKgMuJleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Drive Folder' },
-        { name: 'Final Materials', url: 'https://drive.google.com/drive/folders/1lugGN6rJecsr_PdvmqRUdmnqfbgypKpc?fbclid=IwY2xjawKgMw1leHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7ncbI4ds9jCO1xzuOaqgKlv080dZwMBhT9zEQaRBrziBaUR0fLM2yiHs12Zw_aem_L2ICVfJ5NlKidPETrJQo4A', type: 'Drive Folder' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1nUy2OeNZ14E2zh0BP8TpQx-pJjjpd8l4/view?fbclid=IwY2xjawKgMhNleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7h9ijIzurQVDClyb-ph4CTok7uThyTfM5zWtU3NMmi_UrGY4xjm5lgYEXzSA_aem_MBq4nCpx2AQwYAy9iuPmtw&pli=1', type: 'Notes' },
-        { name: 'Pythom Videos', url: 'https://youtube.com/playlist?list=PLp7yhNWDuCSDtXcsGIiMBNGmNctbSeiDx', type: 'Course Video' },
-        { name: 'Python Videos', url: 'https://www.youtube.com/playlist?list=PLFOfwbRXCOgaP97mHKMXmh_y2tEnokX4G', type: 'Course Video' },
-        { name: 'Java | Data Structure', url: 'https://youtube.com/playlist?list=PLBJgv5EOl28KRGTJHjREcFM9z0p5Ewxis&si=IT92UnvySDlJBxqr', type: 'Course Video' },
-        { name: 'Python', url: 'https://youtube.com/playlist?list=PL7oKIPF7ZnjbOmZ1JWCE0xnqH-gUmCV9u&si=ZxrYXYFq2aNFhtFp', type: 'Course Video' },
-      ],
-    },
-    Cse221: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE221', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLNDrhDXd0Qt9J_ZlWCgvt-FHm28G0Kiaf', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_LUEKMB6VGnhUveo7k70t4M', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLLmtRk3TWm61Ewvp0zse5XZqehI448vsv', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLgU-6-TtNPAzpauVSPWpKFbmu5Rbc2dEQ', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLPFDgD6kUaiRCGxuHu3GWhFHCKFTnnZV0&si=2dbEuVlGXKaXFNNg', type: 'Course Video' },
-        { name: 'General Notes', url: 'https://docs.google.com/document/d/15-tHUwzf54ATsWVgI1P_UYAdRAGBIZiKSxPfkkd9gSA/edit?fbclid=IwY2xjawHk8KNleHRuA2FlbQIxMAABHci1QdxhjTETKA1xbWwU2jl7QzBm27TzRBvJ91zgdLONWrjeCiR4x_RZtw_aem_5boe2eqB88yJ_-vmn3Nb-Q&tab=t.0', type: 'Notes' },
-        { name: 'Slides + Notes', url: 'https://drive.google.com/drive/folders/1EuJTeoAiPXXtdCI5O3k48XDK5_z4O7xU', type: 'Drive Folder' },
-      ],
-    },
-    Cse230: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE230', type: 'SDS Webview' },
-        { name: 'Farhan Feroz Channel', url: 'https://www.youtube.com/@farhanferoz8226', type: 'YouTube Channel' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IpBYjcyBix7edgUsT7wWbP', type: 'Course Video' },
-        { name: 'Midterm Materials', url: 'https://drive.google.com/drive/folders/1pLiyulToA0D0pz-jDx7QPw0_4vuA5_4o', type: 'Drive Folder' },
-        { name: 'Final Materials', url: 'https://drive.google.com/drive/folders/1pIwuXg_yuPUIIUm8Wrcxh6yNGD8x8Bwa', type: 'Drive Folder' },
-        { name: 'Book + Practice Sheet + Lecture Slide', url: 'https://drive.google.com/drive/folders/168njBvRnGkJNXFz9rzTJsBVJCQExgHck', type: 'Drive Folder' },
-      ],
-    },
-    Cse250: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE250', type: 'SDS Webview' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/1InXQaFzcpopkLLxTPJhtPY7c_D0XD7-J', type: 'Slides' },
-        { name: 'Practice Sheets', url: 'https://drive.google.com/drive/folders/1Lyd9vesm1yTCy1_0CzrmSUWEwjygVmYK', type: 'Practice Sheet' },
-        { name: 'Lab', url: 'https://drive.google.com/drive/folders/1vS5r47VJLmh8RJNey37f2RXB6fUrHkm9', type: 'Drive Folder' },
-        { name: 'Solve Slide', url: 'https://drive.google.com/drive/folders/1NmcP1McccX7LA89RFzj5k-uNEyNCRg-8?usp=drive_link', type: 'Slides' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PL-lCYwFS3hp0hbnUd8-FzWxfQzvqt-d5w', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLaGWhzUB5BBslAOakUL8ETnMpZntxE-UV', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PL-lCYwFS3hp2iDVWtZqCqD7SP1CJduM6c', type: 'Course Video' },
-      ],
-    },
-    Cse251: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE251', type: 'SDS Webview' },
-        { name: 'Practice', url: 'https://docs.google.com/document/d/1Y5DQWqEbwzJ204owxNtz9Uz_kYvaR20z/edit?tab=t.0#heading=h.gjdgxs', type: 'Practice Sheet' },
-        { name: 'Midterm', url: 'https://drive.google.com/drive/folders/1VC8TeExyFd8Kzm8ZGFfLwYvMn590UtXR', type: 'Drive Folder' },
-        { name: 'Final', url: 'https://drive.google.com/drive/folders/1VC8TeExyFd8Kzm8ZGFfLwYvMn590UtXR', type: 'Drive Folder' },
-        { name: 'Recordings', url: 'https://drive.google.com/drive/folders/18UPtNJTJg02RbB2C13apUxDsnPHCCBIC?usp=sharing', type: 'Drive Folder' },
-        { name: 'Notes', url: 'https://drive.google.com/drive/u/1/folders/1RSuVzuSOKNHrGs9Zzuf9FfvZRPWO1sKA', type: 'Notes' },
-        { name: 'Practice (MID)', url: 'https://docs.google.com/document/d/1_prE0ZB3cQlBN34c6YD31nddDbuf3wPy_CpB3tKZk8w/edit#heading=h.m2a0l5ds7zfl', type: 'Practice Sheet' },
-        { name: 'Practice (FINAL)', url: 'https://docs.google.com/document/d/19P90klMwWfc-VmW1h-MEQWUl_l1OLDeN3mdtk_muH80/edit?usp=sharing', type: 'Practice Sheet' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLvj5w6iNZqVgmrLWcUvi1GLRPLSK_Pd3X', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLgvIXc7KCwucTAca4GIRXBLPtqEMRosOq', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLaGWhzUB5BBthrRrLHpds41A29cPE0tnW&si=GKfHHaF_mU5EpE7V', type: 'Course Video' },
-      ],
-    },
-    Cse260: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE260', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_IKB3PUO9ejeQVujN0SNFtB', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLzzYtJMBTYCcVH56uHLz0f7eJI0JNAEyQ', type: 'Course Video' },
-        { name: 'DZK Videos', url: 'https://youtube.com/playlist?list=PLTlXQu_162Qi4Bi8S5UskgcVgBhy0wXpg&si=ntMJKCsLglg9yasi', type: 'Course Video' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/13WDcyXruuzYMhA9TDVt1Dte7CzJR9ii_', type: 'Slides' },
-        { name: 'Slides + Quiz Solu + Lab assignments+ Theory assings+ Project Solution', url: 'https://www.playbook.com/s/bdsketch/B5HwHoUC5UtwycHPrjQGAz8b', type: 'Playbook' },
-      ],
-    },
-    Mat215: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLjn0GYNs9zvyZQmXMV2NtXSvk6PYz_BG4', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PL63IQkIty91joaYSai_5431PQ9BP5pvew', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLx3F9dOqe5Km3kji6OlQ0S-MCmhUKt9yp&si=gJ6tSxlMYbzVZHqj', type: 'Course Video' },
-        { name: 'Slide + Assgin + Quiz Solu', url: 'https://www.playbook.com/s/bdsketch/fBP22TKaBBmPgQ1zx9CX6Xrf', type: 'Playbook' },
+  Cse110: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE110', type: 'SDS Webview' },
+      { name: 'MSI Drive', url: 'https://drive.google.com/drive/u/0/folders/1X6AvHdRgXy-oQgIUt9QpqhDGU_IqqP3w', type: 'Drive Folder' },
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfo173BJeLyMZ9KlI7tORwW', type: 'YouTube Playlist' },
+      { name: 'Python by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_0V-mjAYlfgk-3VRmFarlzC', type: 'YouTube Playlist' },
+      { name: 'Java by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_0KC2-N3hv0V3ib-Z6wKkAy&si=iPUg6XmhB4_0U8Vn', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse111: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE111', type: 'SDS Webview' },
+      { name: 'Mixed Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYELRU2IHZNUD0A4UpT8ejWu', type: 'YouTube Playlist' },
+      { name: 'SAD', url: 'https://youtube.com/playlist?list=PLaVWjQSl4OrjCnQU00ES3CnimhS0Ii9Ne', type: 'YouTube Playlist' },
+      { name: 'SAD (Tracing)', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQc5U2XOYzzTAcyQQLrIktG2', type: 'YouTube Playlist' },
+      { name: 'Python by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_3NAwjutgaG0-62d2yjG6qz&si=329s5uuDQX9sPd56', type: 'YouTube Playlist' },
+      { name: 'Java by TAW', url: 'https://youtube.com/playlist?list=PLvr0Ht-XkB_3QPWYBje6NqEs3QLj_0vpf&si=BxcwdMNB7M3pZBbm', type: 'YouTube Playlist' },
+      { name: 'LAB Notes', url: 'https://docs.google.com/document/d/1gKLmGnWju4fRBWC5OcRCa76zMql0wUA8z0VD3rd1Dvo/edit', type: 'Google Doc' },
+    ],
+  },
+  Psy101: {
+    resources: [
+      { name: 'AYSHA MISS Videos', url: 'https://www.youtube.com/playlist?list=PL8ruJoNFhcPEwxKM9uPJmqKx26Ktk7dp-', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYF06zBfuyUXVRwIsFyRCtQH', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5WfeQuFa6liwvel5BJWuA_MD&si=ND9uxnWkOpuD5J9X', type: 'YouTube Playlist' },
+    ],
+  },
+  Phy101: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYF06zBfuyUXVRwIsFyRCtQH', type: 'YouTube Playlist' },
+    ],
+  },
+  Phy111: {
+    resources: [
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfyYxZuKc7V1aw18nZIHgkj', type: 'YouTube Playlist' },
+      { name: 'Course Notes', url: 'https://drive.google.com/file/d/1cdNSHun3xWlRQ_XmThXRe0CA2QCqw8i0/view', type: 'Drive File' },
+      { name: 'Assignments + Notes', url: 'https://www.playbook.com/s/bdsketch/hJebtwSeyB6Yuy2cXdmnwX4B', type: 'Playbook' },
+      { name: 'Course Notes', url: 'https://www.playbook.com/s/bdsketch/srFLz7rzJsBrfzgogowHdHZt', type: 'Playbook' },
+    ],
+  },
+  Phy112: {
+    resources: [
+      { name: 'TKT Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQegkOv8qyoy4xW5kZVdFKYF', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLRWEVZnjBLkXeYL6Vn24JSI2uoGvDLhki&si=YSYAJoALQBU1DJ0M', type: 'YouTube Playlist' },
+      { name: 'Circus of Physics', url: 'https://youtube.com/playlist?list=PLWlwBmP9J5xxrdF5VPRqow5nEy0GPcGtC&si=LQrrS8WG9AKMqN78', type: 'YouTube Playlist' },
+      { name: 'RDI LAB + Assignment + Notes', url: 'https://drive.google.com/drive/folders/14ayFXOn6Em2V4qBwEzqs0zEo14_H0td4', type: 'Drive Folder' },
+      { name: 'Course Notes', url: 'https://drive.google.com/drive/folders/1EhHA-eEwi7DGSXZtmYWrA2LpAQD3tttS', type: 'Drive Folder' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/13vMk-usiLBUTbP_lpd83H9B45MCDpj_g', type: 'Drive Folder' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/4r1V9QKB1E2getgqWzAP3PYp', type: 'Playbook' },
+      { name: 'Playbook Materials', url: 'https://www.playbook.com/s/course-materials/RuAvzibsPsh9DYL78oWy2KvW', type: 'Playbook' },
+    ],
+  },
+  Mat110: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://drive.google.com/drive/folders/14lB1F_wya4yvnQ9ILYnNCWqzehch_NLM', type: 'Drive Folder' },
+      { name: 'Notes', url: 'https://anotepad.com/notes/6jrq9ffh', type: 'Notes' },
+      { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wf2ivvurpQ-2zi6kgWGMGo0&si=0GDY8AZ7f1rbiO09', type: 'YouTube Playlist' },
+    ],
+  },
+  Mat120: {
+    resources: [
+      { name: 'Reza Sir Videos', url: 'https://www.youtube.com/playlist?list=PLE3MtMBjMVLdrdZzdlzNFDx2cq5CYKWoxIntegral', type: 'YouTube Playlist' },
+      { name: 'Sharepoint Folder', url: 'https://gbracuacbd-my.sharepoint.com/:f:/g/personal/shahin_sharukh_anik_g_bracu_ac_bd/Em2EJSKpEMdAoApN0XcZHfcB7usmVlAuuC4MIfdd_yrvww?e=wxqTRA', type: 'Sharepoint Folder' },
+      { name: 'Playbook Notes & Assignments', url: 'https://www.playbook.com/s/bdsketch/3JB1ajDWbgnPTaQqSU52gW4j', type: 'Playbook' },
+      { name: 'Playbook Notes & Quiz', url: 'https://www.playbook.com/s/bdsketch/xdGqbg588QQZ8t3XXKA8SybD', type: 'Playbook' },
+      { name: 'Notes', url: 'https://drive.google.com/file/d/1d4RRJ5bYDgj95RGuIxk2-4EHjKZ0xkln/view?usp=sharing', type: 'Drive File' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfdK08koMO_YBPy-zTokdN5', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/playlist?list=PL7XBjdiQyhKlNOh25PtdLW-R6LKEzC724', type: 'YouTube Playlist' },
+      { name: 'Organic Chemistry Tutor Videos', url: 'https://youtube.com/playlist?list=PLWJpC15qtfVotLA1C9dAzyFyU4n_RIvwm&si=2-p68Nlz3igiACYr', type: 'YouTube Playlist' },
+    ],
+  },
+  Eco101: {
+    resources: [
+      { name: 'RFU Videos', url: 'https://www.youtube.com/playlist?list=PLIIEr6BC1NsT1eieKehF-Q2625w0Q5Lf5', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PL9aZtK5kh5We1lP13o92XXcmCGlYNk6kQ', type: 'YouTube Playlist' },
+      { name: 'Mega Folder', url: 'https://mega.nz/folder/X1wQzSAa#z49m2IVcSW7cniXrBsabpw/folder/vxwwHSaZ', type: 'Mega Folder' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5We1lP13o92XXcmCGlYNk6kQ&si=iXVcJxAW4PHKzF-i', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5WcO3_7f8M4p-D3otJc_qHg0&si=nwsK0UlBw1u-yWbQ', type: 'YouTube Playlist' },
+    ],
+  },
+  Eco102: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYEWRssutl6dWd2Pu7CF7QXv', type: 'YouTube Playlist' },
+    ],
+  },
+  ENG102: {
+    resources: [
+      { name: 'RS Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_K4f46TegQvTCxpKb9p0VQk&si=REXNrD7fg76IfhgC', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLRJFV3c2qEElGUFHmMaT9TNKFj_POgZle&si=Di42UtQXhcPlOhth', type: 'YouTube Playlist' },
+    ],
+  },
+  ANT101: {
+    resources: [
+      { name: 'ZTK Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiHsPiJse4vJImvi8UKm2rBJ', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLOUm6fJiwrYFLCHnZPcQguGqrWZWY6sYa', type: 'YouTube Playlist' },
+    ],
+  },
+  BUS201: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYECj1TXWk7JZRazDJCfSO3q', type: 'YouTube Playlist' },
+    ],
+  },
+  HUM103: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLBOVh3Vky8Al-OFqWfKpL35qZQslI8e9d', type: 'YouTube Playlist' },
+      { name: 'Shaiya Miss Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_JYyOuFUkspcy2pWiUBx5Yo', type: 'YouTube Playlist' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/WyA4MxCWppQVgN2VqPct7nNY', type: 'Playbook' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/ydj1osJUfy263izwjCttF471', type: 'Playbook' },
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/1-SAG2CkxJZffZ67d5NooGneEs75ksdKW', type: 'Drive Folder' },
 
-      ],
-    },
-    Mat216: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLMZnvBHNk2GXZtWLVxnWfGAAlrz3wvzf9', type: 'Course Video' },
-      ],
-    },
-    Sta201: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLaEUQX2Nu3NniRJUC18N3osaKkK62LDha', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_L7Ixh7QGzHYjTU6uZumIgp', type: 'Course Video' },
-        { name: 'Practice + Lecture Slide + Assignment', url: 'https://drive.google.com/drive/folders/1FVn5Sdp4Hpe4PzJI0FdRcxcDfs4sB1Fj?usp=sharing', type: 'Drive Folder' },
-      ],
-    },
-    Cse320: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE320', type: 'SDS Webview' },
-        { name: 'General', url: 'https://drive.google.com/drive/folders/1THwgkpvw_c-X0Zw9ZqL0SEiSToQO-0b7', type: 'Drive Folder' },
-        { name: 'MID + FInal', url: 'https://drive.google.com/drive/folders/1VeJn-oTNJIDHLJuWXkxQBxgU8-zhWFEH', type: 'Drive Folder' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1i9PvRrWKYhusWg9XgysBEk25621bBuaF/view?usp=sharing', type: 'Notes' },
-        { name: 'General 2', url: 'https://drive.google.com/drive/folders/17z3nVgzpCDbHYPELUEGnMXaWnsSSC_iK?fbclid=IwAR1JW_CbSe5_WjWQLYnaklZ1fGwfhvoSGW8bd1eZe2qf8Psvs083KPR4v1w', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLZTczv_dAo9OVjUOAh9hHDPF6WxtHvBt5', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IKY5IKOKCOkIHrCZQZjxwL', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL5b6Wl2Equ1a2Xcpo3bAvAoG_Nr6J86IX&si=kcwBW6cm_4MK56k4', type: 'Course Video' },
-      ],
-    },
-    Cse321: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE321', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL4iTVKzFqrcOYQ_Cu4IIcUgLygzmUvsLG&si=jAlYnYK6hYq0Cvr5', type: 'Course Video' },
-      ],
-    },
-    Cse330: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE330', type: 'SDS Webview' },
-        { name: 'Lecture + Practice Problem', url: 'https://docs.google.com/document/d/1iBB0qw32X-3nGlKcYcpWWIX0X0gQtUf4DEGzCzC9CLs/edit', type: 'Notes' },
-        { name: 'Lecture', url: 'https://docs.google.com/document/d/1Etnt2GUvRwcjQG1m0yZUozbjv488pCtuizeOM3KqIIQ/edit?fbclid=IwY2xjawIeXrxleHRuA2FlbQIxMAABHWFQO6yrLtKN62-S_WII_fsfQTZYMZAZuZpCZnqdrbWXt82v0pEzZ_pI9A_aem_BfyLrpLc4bYWz6FLsJdwAw&tab=t.0', type: 'Notes' },
-        { name: 'MID + FINAL', url: 'https://drive.google.com/drive/folders/1bYPKvA8dKHVMFfqm8mv_hxrSLCr1gFbR', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLq1kE3IvmqQ61uZyJUJj0zG-OF-CE4fLa', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLI2S4r8iKOiJmRUeTfN4mVgc3PSJ7FQgk', type: 'Course Video' },
-      ],
-    },
-    Cse331: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE331', type: 'SDS Webview' },
-        { name: 'Lecture Videos', url: 'https://drive.google.com/drive/folders/11tvuLOhqTDtJiiXsUKmuMPEjKxZPZFz2', type: 'Drive Folder' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1DZtAetQGHeTZGUM1QIEqZGQ9SRoUDIx4/view?fbclid=IwY2xjawKgQOVleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7JKVke2EL_J02tK1wCZMNgjJOHJTUY7f1X5yzNQeuEbGL6iLseV_xMAQ4zEQ_aem_Lnstb0Pyjh6cjjxf-WTpPA', type: 'Notes' },
-        { name: 'Midterm', url: 'https://drive.google.com/drive/folders/1qq24OO39tbwgd6nSucdW_2duTsszyth1', type: 'Drive Folder' },
-        { name: 'Final', url: 'https://drive.google.com/drive/folders/12BheG46xp7QaqEaFWg3MVD1VxMlsZyj-?fbclid=IwY2xjawKgQZhleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLpqy_jyQeZnH_zRZPH_dP7ENQlcAz81_9', type: 'Course Video' },
-        { name: 'ffz Videos', url: 'https://youtube.com/playlist?list=PLBENQsMXh3gz85EJ3ZCSa9l9hnUiOer-H', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLUl4u3cNGP60_JNv2MmK3wkOt9syvfQWY&si=xz6c0iOSgLWuPvlQ', type: 'Course Video' },
-      ],
-    },
-    Cse340: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE340', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQeQ_RpnnTf46jMQKw5QP4sB', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLsheiwzPKqWd_I5uRzJIDMhfYJD35WZY5&si=tdwr6sUoi_DZ0ukU', type: 'Course Video' },
-        { name: 'Videos', url: 'https://drive.google.com/drive/folders/1kU-wSwXj65Sr05nvzb2q21AvypTVagps', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://drive.google.com/drive/folders/1KWPpbAmhFq2O6KMiQ9obnpZU0rC_zSB4', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://drive.google.com/drive/folders/1hGGhPqn_is69l5CSc5_inPgmoGzCzB2E', type: 'Drive Folder' },
-        { name: 'All materials', url: 'https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vSWcAfxURWvIEwF123nmZCAY2YwAn9xApEB46RNp8oHJKrgLwn3Qv_DRip53pqBRE36fV_OAgsNr_F2/pubhtml?gid=2060881823&single=true', type: 'General' },
-      ],
-    },
-    Cse341: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE341', type: 'SDS Webview' },
-        { name: '(External) Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_JKPROcvmNlr1t0QWmflRIy', type: 'Course Video' },
-        { name: '(External Lab) Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_KNt-hLsUqj8zZmXHO7lOl0', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wew0eD68a0g-CKIWXINje-k&si=Flmw_pFcwptBuxbo', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wew0eD68a0g-CKIWXINje-k&si=xuKGav0v6i2RLvuP', type: 'Course Video' },
-        { name: 'Notes', url: 'https://drive.google.com/drive/folders/10P66cCci4mqOP8cSyFRSZem6gFUsP1S-?usp=share_link', type: 'Notes' },
-        { name: 'Project', url: 'https://github.com/Xmortian/Game-Store-in-Assembly', type: 'Project' },
-      ],
-    },
-    Cse350: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE350', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLLpSkO6bcke6ovLtXTT7xUU1P8Gk1qT1q', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5WdRQC1a_rP-zZTpqtcDhORy&si=TSJretV0wfEO3oCb', type: 'Course Video' },
-        { name: 'Lecture Vids', url: 'https://docs.google.com/document/d/1fOEMVM9hlIeNKMB6nBvefxJ3CxKLJvpOARNUkF_xE38/edit?usp=drivesdk', type: 'Notes' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/1KedIZZEPtEPkrv3P-o4c-mCdDqWzfwqH?usp=sharing', type: 'Slides' },
-        { name: 'Vids', url: 'https://docs.google.com/document/d/1Be_NeXdNTODSTrnPJgLG-cwohpezy_0dhED2ILtIpd0/edit?usp=sharing', type: 'Notes' },
-      ],
-    },
-    Cse360: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE360', type: 'SDS Webview' },
-        { name: 'Shakir Rouf Sir Videos', url: 'https://youtube.com/playlist?list=PL8I0kbow2q8HgpBEruOmyFA63ejc-QHaq', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLq1kE3IvmqQ67h-oXuk1dANicJ4YFNBoe', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiFz3p9soLwtlxDyT6KKCuDu', type: 'Course Video' },
-        { name: 'UJT New Link Videos', url: 'https://youtube.com/playlist?list=PLaBp58iNG2rPjeXsQmjn4GCud0X96qq8R&si=Lfkn9Qm1goMhaqAg', type: 'Course Video' },
-      ],
-    },
-    Cse370: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE370', type: 'SDS Webview' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/1FkgbFZRvWS08QFs-BEePPkQh0O8n7Um2', type: 'Slides' },
-        { name: 'Practice Sheets', url: 'https://drive.google.com/drive/folders/1IJET35EOzg30wfXER9zllV9O7g3antAU', type: 'Practice Sheet' },
-        { name: 'Other', url: 'https://drive.google.com/drive/folders/1h__RHPuWDTHcghiKCx6AQSNnr6n2jei9', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLbrkVe8jT_YwMhF4TWw1Q9ETFrUIYjOPM', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/watch?v=LrgJFaHNBd4&list=PLOtP4f8D4mwC5A0aXwqIbOiQ0N-nTkUjw', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLolBlJ23We1WSlWl0YW-htAPf3DSJvKb5', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLgrAmbRAezuhRWTyOKPxvoiyNQfPo6Iv3&si=6G1GObcP6-kkg0mY', type: 'Course Video' },
-      ],
-    },
-    Cse420: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE420', type: 'SDS Webview' },
-        { name: 'Nishat Nayla Miss Videos', url: 'https://www.youtube.com/playlist?list=PLvC1QCXXPlAVU0ZeGR8ca1X_q-j6I4kVm', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wd9tFyYiWXcCmQpr0Lu_vm4&si=CaDOti_UgTSQosGv', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQctSUaM_mbdSpKrWO8EVJxT&si=ng6Ke4ygqjT-w7mb', type: 'Course Video' },
-        { name: 'Videos', url: 'https://m.youtube.com/playlist?list=PLM9X445MI6QriAQH-8ncpZW9sXawsbj1B', type: 'Course Video' },
-      ],
-    },
-    Cse421: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE421', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLJh97ekrGHeKnnsQqBmP1gG4Pki1OLejM', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfdTPgMaU6PhvtGtKOgINbE', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_J2wA2OxXP27lyFUDBKpLpw', type: 'Course Video' },
-        { name: 'Videos', url: 'https://drive.google.com/drive/folders/1MvG-zs--S50PdpmHbayl2irT8PaBjH6n', type: 'Drive Folder' },
-        { name: 'Drive Folder', url: 'https://drive.google.com/drive/folders/1AbnrDSFyytekU5kBRNobpNwtixDz82Jf', type: 'Drive Folder' },
-      ],
-    },
-    Cse422: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE422', type: 'SDS Webview' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/1R7MYfPFzh8HzMYjS6cRKlN7RFeNqJyf0', type: 'Slides' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLUl4u3cNGP63gFHB6xb-kVBiQHYe_4hSi', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLWRpUAekvxftDKhhhNBgDK1BKFzl6Qdti', type: 'Course Video' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?app=desktop&list=PLCh3_NUqW7_KOLBOn6zGZWJY1MTNkshpZ', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLXyBH3LodMoc4_Z_G-UIowy9o5QDeaFhI&si=0QK6lmT84XskCPdn', type: 'Course Video' },
-        { name: 'Notes', url: 'https://drive.google.com/file/d/1nUy2OeNZ14E2zh0BP8TpQx-pJjjpd8l4/view?fbclid=IwY2xjawKgMhNleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7h9ijIzurQVDClyb-ph4CTok7uThyTfM5zWtU3NMmi_UrGY4xjm5lgYEXzSA_aem_MBq4nCpx2AQwYAy9iuPmtw&pli=1', type: 'Notes' },
-        { name: 'GENERAL', url: 'https://drive.google.com/drive/folders/159aiOW8gygSXEiTTKXP5yUu6bRTkL4k1', type: 'Drive Folder' },
-        { name: 'Midterm Questions', url: 'https://drive.google.com/drive/folders/1pJ1QOW7ytfZd6Sn8WtsP2H7N4c0air4e?fbclid=IwY2xjawKgMuJleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Previous Questions' },
-        { name: 'Final Questions', url: 'https://drive.google.com/drive/folders/1lugGN6rJecsr_PdvmqRUdmnqfbgypKpc?fbclid=IwY2xjawKgMw1leHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7ncbI4ds9jCO1xzuOaqgKlv080dZwMBhT9zEQaRBrziBaUR0fLM2yiHs12Zw_aem_L2ICVfJ5NlKidPETrJQo4A', type: 'Previous Questions' },
-      ],
-    },
-    Cse423: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE423', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://www.youtube.com/playlist?list=PLq1kE3IvmqQ5ako5vkhRhY7CGL1fB5qmg', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiGEnHoenkLSTqEAmmQtaoJb', type: 'Course Video' },
-        { name: 'Notes + Slides', url: 'https://drive.google.com/drive/folders/17QRi10YRwzKIBgP90Cf3-bVltscpvxiR?fbclid=IwY2xjawKgNTZleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7h9ijIzurQVDClyb-ph4CTok7uThyTfM5zWtU3NMmi_UrGY4xjm5lgYEXzSA_aem_MBq4nCpx2AQwYAy9iuPmtw', type: 'Drive Folder' },
-        { name: 'Videos + Practice Sheet', url: 'https://drive.google.com/file/d/1lyQEgTvTdd4JuZfh7rYAS3d1rMjh0M-D/view?fbclid=IwY2xjawKgNVNleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Drive File' },
-        { name: 'Notes + Videos', url: 'https://drive.google.com/drive/u/0/folders/18jNxejAPblYXoSZ7K7UifcWuYKD5tOz_?fbclid=IwAR1gp-5zCikND5cPmZYK81c8iwuG65EmDkGG7Z7Ts7T0SvR-QLmVx7bfjyY', type: 'Drive Folder' },
-        { name: 'SLides', url: 'https://drive.google.com/drive/folders/1vRWaUym0OhZB0l2HeCr2cvhp5Jz6G8Mn', type: 'Slides' },
-      ],
-    },
-    Cse425: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiHZZU5jdzp2SEdDOuO2iMMA&feature=shared', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQcHWGNtB2JpYPhTg23M2fyV&si=9MWjqlPLENDX76i4', type: 'Course Video' },
-        { name: 'ALL', url: 'https://drive.google.com/drive/folders/1l1mo8eVB9oKwY_B_JzcqsXkyJ8HKT2dE?fbclid=IwAR1F70TuRZ5v9gkWktwdxuWM5IOJal8x0I3EVNwxRiBO-8DUcgiXKf-jBZg', type: 'Drive Folder' },
-      ],
-    },
-    Cse426: {
-      resources: [
-        { name: 'Videos', url: 'https://www.youtube.com/watch?v=lTSMpGEvcrY&list=PLBENQsMXh3gxal4lOjpYZFdgcq8jGaVPX', type: 'Course Video' },
-        { name: 'Notes + Vids', url: 'https://drive.google.com/drive/folders/12nowKsi2NFdNksgF2z9hB5Y9OBswhofl', type: 'Drive Folder' },
-      ],
-    },
-    Cse428: {
-      resources: [
-        { name: 'LAB and Theory Videos', url: 'https://www.youtube.com/playlist?app=desktop&list=PLn12JjJn-4YnoOsrIuREbn3BmshSI3lHS', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQcOyIQ5vXnbHMQNdqkAWuhq&si=zWBl0hN4X5W2RPDS', type: 'Course Video' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/1Nh7nUeK8LvNq3eVqchAVnm3oYrI4UM88?usp=drive_link', type: 'Slides' },
-      ],
-    },
-    Cse437: {
-      resources: [
-        { name: 'GRA ALL', url: 'https://drive.google.com/drive/folders/1yuDdWMJmGDHLpIi8oOOXGQc5wFBMVCcG', type: 'Drive Folder' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLzi4LDrZWYxbDw1iFyiJx1YPSh8GaaBlK&si=oKdtRzXyQB9qI1Mc', type: 'Course Video' },
-      ],
-    },
-    Cse440: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLFOIrFMarApSPIwXCgl6Tw-nF4FOkF_X0&si=aCZqB2zJoP7nUhGQ', type: 'Course Video' },
-      ],
-    },
-    Cse447: {
-      resources: [
-        { name: 'MIH Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiEiq3CreAT_3u8ujQX4SXmU&si=ae-CxSMwAcB9sROv', type: 'Course Video' },
-      ],
-    },
-    Cse460: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE460', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://www.youtube.com/watch?v=bI6yqGtp1KM&list=PLbn1ykCe23UeICjfkoruMhr3WcHWkItfa', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLcbux5FgR-JJEZLhclidmG5w6iDCAcL7Y', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLaVWjQSl4OriR3qNRAoCEr_ePRF_YwCuw', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLn12JjJn-4YkQy8uyNnkRrt4SiE4SvZDX&si=GEHEI19GNkLNnDxB', type: 'Course Video' },
-      ],
-    },
-    Cse461: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE461', type: 'SDS Webview' },
-        { name: 'RAD Videos', url: 'https://youtube.com/playlist?list=PLkE3k0P4Vrn1iw1BCGbvFxABPjSO3ktJB&si=5YMSGA9mGIPxFCqD', type: 'Course Video' },
-        { name: 'RBR Videos', url: 'https://youtube.com/playlist?list=PLWCaK_oHHOY6sCTaTOe_fGmdALn-vh9lT', type: 'Course Video' },
-        { name: 'combined NLY , RAD and Rafid Sir\'s online session', url: 'https://www.youtube.com/watch?v=jh4M4RFvujI&list=PLIIEr6BC1NsQb5v6xZLt-5e59zn6bYbdp', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLcVvBmM3BkTOU-LDEUUdMl_VN2DPgWrQj', type: 'Course Video' },
-        { name: 'Slides + notes + Quiz', url: 'https://drive.google.com/drive/mobile/folders/1G8MDpr2eQA4exz1aCxo6v1UIar7sDDWI', type: 'Drive Folder' },
-      ],
-    },
-    Cse470: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE470', type: 'SDS Webview' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLWCaK_oHHOY7a2WmHpzoO1EnkEoMliQzv', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLjUIUiI7C4na9VCtlPmZaVTGRoYAlPaPE', type: 'Course Video' },
-        { name: 'Drive Folder', url: 'https://drive.google.com/drive/folders/1zPKxJe5xtByP6FaxDvxZBZ9N0CcETlLO', type: 'Drive Folder' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/1Wx0rmp2GPr9oZ2BsfqH4Z6X6CNzFH9h5', type: 'Slides' },
-      ],
-    },
-    Cse471: {
-      resources: [
-        { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE471', type: 'SDS Webview' },
-        { name: 'Recordings', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wd9M-4rxicny-ruVi0dTTf3&si=WMu9Ey_l3GROTaE1', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQes9f7x9gdoWXlzbWUf4t5o&si=Yl-UThrCK9dHlMvi', type: 'Course Video' },
-        { name: 'Practice Sheet', url: 'https://drive.google.com/drive/folders/1uFdJWn_HwM2Ni8GJrA5XoHMSE6F1CVw2', type: 'Practice Sheet' },
-        { name: 'Previous Questions', url: 'https://drive.google.com/drive/folders/1FHfQRDlWhW6Uu5ZRbLkXAcpM-xX-Btt0', type: 'Previous Questions' },
-        { name: 'Slides', url: 'https://drive.google.com/drive/folders/11NUN4Hpj7YpLVaOm_OxwfSfvgfLGYRps', type: 'Slides' },
-        { name: 'General', url: 'https://drive.google.com/drive/folders/1W2Do5ztA0J4ivVoG1torWj3l5lzmCKEt', type: 'Drive Folder' },
-      ],
-    },
-        Cse474: {
-      resources: [
-        { name: 'External Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_JQaKidqDU0eIklFg3piADM', type: 'Course Video' },
-        { name: 'External Project Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IK7oOEh4-qLoU4CpWGilEH', type: 'Course Video' },
-      ],
-    },
-    Cse481: {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL-lCYwFS3hp2T0MAwY0MmQpWaQF0pmsJv', type: 'Course Video' },
-      ],
-    },
-    'Cse482 / PHY430': {
-      resources: [
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PL-lCYwFS3hp1yy4K5o5yFT7BFn5bH1s8m&si=k7aHGHGX7FgN-lxX', type: 'Course Video' },
-        { name: 'Videos', url: 'https://youtube.com/playlist?list=PLvj5w6iNZqVgt_bqYyfAbZb0uD4SxtZoD', type: 'Course Video' },
-      ],
-    },
-    'Code n quest': {
-      resources: [
-        { name: 'Channel', url: 'https://www.youtube.com/@codeNquest-q2j/videos', type: 'YouTube Channel' },
-      ],
-    },
+    ],
+  },
+  FRN101: {
+    resources: [
+      { name: 'External Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_L4LS0eyKAszqI48QuoWIow', type: 'YouTube Playlist' },
+    ],
+  },
+  CHE110: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYEqBH-G1Yv0pHtldxHd8ee2', type: 'YouTube Playlist' },
+    ],
+  },
+  ENV103: {
+    resources: [
+      { name: 'External Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYHx515beqwd-8f9V_VIYPXCG', type: 'YouTube Playlist' },
+    ],
+  },
+  GEO101: {
+    resources: [
+      { name: 'External Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYFSPyVwBHeDtYlPKVuY6NJ0', type: 'YouTube Playlist' },
+    ],
+  },
+  EMB101: {
+    resources: [
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLJ8-tNmGjhaqEYdrwK1wcqyXTByKcrXYm&si=nbOaBIlNL6l8IXZz', type: 'YouTube Playlist' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/Qd9ZGGDQpuqEFG3JRgNdyWMA', type: 'Playbook' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/d8yUxGvXqdU7L3oFhTLPaGwV', type: 'Playbook' },
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/1-SAG2CkxJZffZ67d5NooGneEs75ksdKW', type: 'Drive Folder' },
+    ],
+  },
+  HUM101: {
+    resources: [
+      { name: 'BuX Playlist', url: 'https://www.youtube.com/playlist?list=PLBOVh3Vky8Al-OFqWfKpL35qZQslI8e9d', type: 'YouTube Playlist' },
+    ],
+  },
+  BNG101: {
+    resources: [
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/cJLm6G96ohfjfLdZ1HxNaThe', type: 'Playbook' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/f3jX85dgG69Bs7677s4DbUQc', type: 'Playbook' },
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/1-SAG2CkxJZffZ67d5NooGneEs75ksdKW', type: 'Drive Folder' },
+    ],
+  },
+  STA101: {
+    resources: [
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/1ezNp3ZZNKKAgrMbgR9ksHmRVXxG4GF0e', type: 'Drive Folder' },
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/1ezNp3ZZNKKAgrMbgR9ksHmRVXxG4GF0e', type: 'Drive Folder' },
 
+    ],
+  },
+  ACT201: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLOUm6fJiwrYHYSMNtBFjFr-1QcoQaAowu&si=WFy1_q6FacAEpEam', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse220: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE220', type: 'SDS Webview' },
+      { name: 'Rak Notes', url: 'https://docs.google.com/spreadsheets/d/11gbvf51q3MsUFkoGwmYtXpgTboC9-0aDX2TzdJJXHK8/htmlview?fbclid=IwAR07RGJSARKu6I8JVJvpG0-GW2AVlh208XMiHOUbj3VtypAt9xvoXN1xOF4#gid=0', type: 'Spreadsheet' },
+      { name: 'Practice Sheet', url: 'https://drive.google.com/drive/folders/1ADucedBDj_y72M8wuF9_JZ9TcBvjCuGp', type: 'Drive Folder' },
+      { name: 'Course Notes', url: 'https://drive.google.com/file/d/1d1BUDFxtOHKGwO48KveePmW0faRffSYb/view?fbclid=IwAR2Z7sReVTdJp07RjPag7Nz9Vj5QKofe2HEF55ptLirEQNEabcSmk8CZfnk', type: 'Drive File' },
+      { name: 'Notes & Assignments', url: 'https://drive.google.com/drive/folders/1J7IZl37KdoQRPq9M7sfg93dVoB1gULk_?usp=share_link', type: 'Drive Folder' },
+      { name: 'Course Materials', url: 'https://drive.google.com/drive/folders/1ZvnnNMjz3AN4r2wJ-xM1BULIDCuADM0I', type: 'Drive Folder' },
+      { name: 'Midterm Materials', url: 'https://drive.google.com/drive/folders/1pJ1QOW7ytfZd6Sn8WtsP2H7N4c0air4e?fbclid=IwY2xjawKgMuJleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Drive Folder' },
+      { name: 'Final Materials', url: 'https://drive.google.com/drive/folders/1lugGN6rJecsr_PdvmqRUdmnqfbgypKpc?fbclid=IwY2xjawKgMw1leHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7ncbI4ds9jCO1xzuOaqgKlv080dZwMBhT9zEQaRBrziBaUR0fLM2yiHs12Zw_aem_L2ICVfJ5NlKidPETrJQo4A', type: 'Drive Folder' },
+      { name: 'Course Notes', url: 'https://drive.google.com/file/d/1nUy2OeNZ14E2zh0BP8TpQx-pJjjpd8l4/view?fbclid=IwY2xjawKgMhNleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7h9ijIzurQVDClyb-ph4CTok7uThyTfM5zWtU3NMmi_UrGY4xjm5lgYEXzSA_aem_MBq4nCpx2AQwYAy9iuPmtw&pli=1', type: 'Drive File' },
+      { name: 'Python Videos', url: 'https://youtube.com/playlist?list=PLp7yhNWDuCSDtXcsGIiMBNGmNctbSeiDx', type: 'YouTube Playlist' },
+      { name: 'Python Videos', url: 'https://www.youtube.com/playlist?list=PLFOfwbRXCOgaP97mHKMXmh_y2tEnokX4G', type: 'YouTube Playlist' },
+      { name: 'Java | Data Structure', url: 'https://youtube.com/playlist?list=PLBJgv5EOl28KRGTJHjREcFM9z0p5Ewxis&si=IT92UnvySDlJBxqr', type: 'YouTube Playlist' },
+      { name: 'Python', url: 'https://youtube.com/playlist?list=PL7oKIPF7ZnjbOmZ1JWCE0xnqH-gUmCV9u&si=ZxrYXYFq2aNFhtFp', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse221: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE221', type: 'SDS Webview' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/playlist?list=PLNDrhDXd0Qt9J_ZlWCgvt-FHm28G0Kiaf', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_LUEKMB6VGnhUveo7k70t4M', type: 'YouTube Playlist' },
+      { name: 'Algorithms (Bracu)', url: 'https://www.youtube.com/playlist?list=PLLmtRk3TWm61Ewvp0zse5XZqehI448vsv', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/playlist?list=PLgU-6-TtNPAzpauVSPWpKFbmu5Rbc2dEQ', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLPFDgD6kUaiRCGxuHu3GWhFHCKFTnnZV0&si=2dbEuVlGXKaXFNNg', type: 'YouTube Playlist' },
+      { name: 'General Notes', url: 'https://docs.google.com/document/d/15-tHUwzf54ATsWVgI1P_UYAdRAGBIZiKSxPfkkd9gSA/edit?fbclid=IwY2xjawHk8KNleHRuA2FlbQIxMAABHci1QdxhjTETKA1xbWwU2jl7QzBm27TzRBvJ91zgdLONWrjeCiR4x_RZtw_aem_5boe2eqB88yJ_-vmn3Nb-Q&tab=t.0', type: 'Google Doc' },
+      { name: 'Slides & Notes', url: 'https://drive.google.com/drive/folders/1EuJTeoAiPXXtdCI5O3k48XDK5_z4O7xU', type: 'Drive Folder' },
+    ],
+  },
+  Cse230: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE230', type: 'SDS Webview' },
+      { name: 'Farhan Feroz Channel', url: 'https://www.youtube.com/@farhanferoz8226', type: 'YouTube Channel' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IpBYjcyBix7edgUsT7wWbP', type: 'YouTube Playlist' },
+      { name: 'Midterm Materials', url: 'https://drive.google.com/drive/folders/1pLiyulToA0D0pz-jDx7QPw0_4vuA5_4o', type: 'Drive Folder' },
+      { name: 'Final Materials', url: 'https://drive.google.com/drive/folders/1pIwuXg_yuPUIIUm8Wrcxh6yNGD8x8Bwa', type: 'Drive Folder' },
+      { name: 'Book + Practice Sheet + Lecture Slide', url: 'https://drive.google.com/drive/folders/168njBvRnGkJNXFz9rzTJsBVJCQExgHck', type: 'Drive Folder' },
+    ],
+  },
+  Cse250: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE250', type: 'SDS Webview' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/1InXQaFzcpopkLLxTPJhtPY7c_D0XD7-J', type: 'Drive Folder' },
+      { name: 'Practice Sheets', url: 'https://drive.google.com/drive/folders/1Lyd9vesm1yTCy1_0CzrmSUWEwjygVmYK', type: 'Drive Folder' },
+      { name: 'Lab', url: 'https://drive.google.com/drive/folders/1vS5r47VJLmh8RJNey37f2RXB6fUrHkm9', type: 'Drive Folder' },
+      { name: 'Solve Slide', url: 'https://drive.google.com/drive/folders/1NmcP1McccX7LA89RFzj5k-uNEyNCRg-8?usp=drive_link', type: 'Drive Folder' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PL-lCYwFS3hp0hbnUd8-FzWxfQzvqt-d5w', type: 'YouTube Playlist' },
+      { name: 'LFL Videos', url: 'https://www.youtube.com/playlist?list=PLaGWhzUB5BBslAOakUL8ETnMpZntxE-UV', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PL-lCYwFS3hp2iDVWtZqCqD7SP1CJduM6c', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse251: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE251', type: 'SDS Webview' },
+      { name: 'Practice Notes', url: 'https://docs.google.com/document/d/1Y5DQWqEbwzJ204owxNtz9Uz_kYvaR20z/edit?tab=t.0#heading=h.gjdgxs', type: 'Google Doc' },
+      { name: 'Midterm Drive', url: 'https://drive.google.com/drive/folders/1VC8TeExyFd8Kzm8ZGFfLwYvMn590UtXR', type: 'Drive Folder' },
+      { name: 'Final Drive', url: 'https://drive.google.com/drive/folders/1VC8TeExyFd8Kzm8ZGFfLwYvMn590UtXR', type: 'Drive Folder' },
+      { name: 'Recordings', url: 'https://drive.google.com/drive/folders/18UPtNJTJg02RbB2C13apUxDsnPHCCBIC?usp=sharing', type: 'Drive Folder' },
+      { name: 'Course Notes', url: 'https://drive.google.com/drive/u/1/folders/1RSuVzuSOKNHrGs9Zzuf9FfvZRPWO1sKA', type: 'Drive Folder' },
+      { name: 'Midterm Practice Notes', url: 'https://docs.google.com/document/d/1_prE0ZB3cQlBN34c6YD31nddDbuf3wPy_CpB3tKZk8w/edit#heading=h.m2a0l5ds7zfl', type: 'Google Doc' },
+      { name: 'Final Practice Notes', url: 'https://docs.google.com/document/d/19P90klMwWfc-VmW1h-MEQWUl_l1OLDeN3mdtk_muH80/edit?usp=sharing', type: 'Google Doc' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLvj5w6iNZqVgmrLWcUvi1GLRPLSK_Pd3X', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLgvIXc7KCwucTAca4GIRXBLPtqEMRosOq', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLaGWhzUB5BBthrRrLHpds41A29cPE0tnW&si=GKfHHaF_mU5EpE7V', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse260: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE260', type: 'SDS Webview' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_IKB3PUO9ejeQVujN0SNFtB', type: 'YouTube Playlist' },
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLzzYtJMBTYCcVH56uHLz0f7eJI0JNAEyQ', type: 'YouTube Playlist' },
+      { name: 'DZK Videos', url: 'https://youtube.com/playlist?list=PLTlXQu_162Qi4Bi8S5UskgcVgBhy0wXpg&si=ntMJKCsLglg9yasi', type: 'YouTube Playlist' },
+      { name: 'Course Slides', url: 'https://drive.google.com/drive/folders/13WDcyXruuzYMhA9TDVt1Dte7CzJR9ii_', type: 'Drive Folder' },
+      { name: 'Slides + Quiz + Theroy Asssignment + LAB Assignment', url: 'https://www.playbook.com/s/bdsketch/B5HwHoUC5UtwycHPrjQGAz8b', type: 'Playbook' },
+    ],
+  },
+  Mat215: {
+    resources: [
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLjn0GYNs9zvyZQmXMV2NtXSvk6PYz_BG4', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/playlist?list=PL63IQkIty91joaYSai_5431PQ9BP5pvew', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLx3F9dOqe5Km3kji6OlQ0S-MCmhUKt9yp&si=gJ6tSxlMYbzVZHqj', type: 'YouTube Playlist' },
+      { name: 'Playbook Solved Problems', url: 'https://www.playbook.com/s/bdsketch/fBP22TKaBBmPgQ1zx9CX6Xrf', type: 'Playbook' },
+    ],
+  },
+  Mat216: {
+    resources: [
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLMZnvBHNk2GXZtWLVxnWfGAAlrz3wvzf9', type: 'YouTube Playlist' },
+    ],
+  },
+  Sta201: {
+    resources: [
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLaEUQX2Nu3NniRJUC18N3osaKkK62LDha', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_L7Ixh7QGzHYjTU6uZumIgp', type: 'YouTube Playlist' },
+      { name: 'Drive Materials', url: 'https://drive.google.com/drive/folders/1FVn5Sdp4Hpe4PzJI0FdRcxcDfs4sB1Fj', type: 'Drive Folder' },
+      { name: 'Drive Assignments', url: 'https://drive.google.com/drive/folders/1oXh_3sXmnaRg8XcpsTHvO1Z6fLtPRRNR', type: 'Drive Folder' },
+      { name: 'Playbook Notes', url: 'https://www.playbook.com/s/bdsketch/JjWRbeH5t56XKQHxJ6sw9bWn', type: 'Playbook' },
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/1KHir7jEUjDXlMbFHS_bdhfs55E12Om3h', type: 'Drive Folder' },
+    ],
+  },
+  Cse320: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE320', type: 'SDS Webview' },
+      { name: 'General Drive', url: 'https://drive.google.com/drive/folders/1THwgkpvw_c-X0Zw9ZqL0SEiSToQO-0b7', type: 'Drive Folder' },
+      { name: 'Midterm & Final Drive', url: 'https://drive.google.com/drive/folders/1VeJn-oTNJIDHLJuWXkxQBxgU8-zhWFEH', type: 'Drive Folder' },
+      { name: 'Course Notes', url: 'https://drive.google.com/file/d/1i9PvRrWKYhusWg9XgysBEk25621bBuaF/view?usp=sharing', type: 'Drive File' },
+      { name: 'General Drive 2', url: 'https://drive.google.com/drive/folders/17z3nVgzpCDbHYPELUEGnMXaWnsSSC_iK', type: 'Drive Folder' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLZTczv_dAo9OVjUOAh9hHDPF6WxtHvBt5', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IKY5IKOKCOkIHrCZQZjxwL', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL5b6Wl2Equ1a2Xcpo3bAvAoG_Nr6J86IX&si=kcwBW6cm_4MK56k4', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse321: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE321', type: 'SDS Webview' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL4iTVKzFqrcOYQ_Cu4IIcUgLygzmUvsLG&si=jAlYnYK6hYq0Cvr5', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse330: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE330', type: 'SDS Webview' },
+      { name: 'Lecture & Practice Notes', url: 'https://docs.google.com/document/d/1iBB0qw32X-3nGlKcYcpWWIX0X0gQtUf4DEGzCzC9CLs/edit', type: 'Google Doc' },
+      { name: 'Lecture Notes', url: 'https://docs.google.com/document/d/1Etnt2GUvRwcjQG1m0yZUozbjv488pCtuizeOM3KqIIQ/edit?fbclid=IwY2xjawIeXrxleHRuA2FlbQIxMAABHWFQO6yrLtKN62-S_WII_fsfQTZYMZAZuZpCZnqdrbWXt82v0pEzZ_pI9A_aem_BfyLrpLc4bYWz6FLsJdwAw&tab=t.0', type: 'Google Doc' },
+      { name: 'Midterm & Final Drive', url: 'https://drive.google.com/drive/folders/1bYPKvA8dKHVMFfqm8mv_hxrSLCr1gFbR', type: 'Drive Folder' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLq1kE3IvmqQ61uZyJUJj0zG-OF-CE4fLa', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLI2S4r8iKOiJmRUeTfN4mVgc3PSJ7FQgk', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse331: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE331', type: 'SDS Webview' },
+      { name: 'Lecture Videos', url: 'https://drive.google.com/drive/folders/11tvuLOhqTDtJiiXsUKmuMPEjKxZPZFz2', type: 'Drive Folder' },
+      { name: 'Course Notes', url: 'https://drive.google.com/file/d/1DZtAetQGHeTZGUM1QIEqZGQ9SRoUDIx4/view', type: 'Drive File' },
+      { name: 'Midterm Drive', url: 'https://drive.google.com/drive/folders/1qq24OO39tbwgd6nSucdW_2duTsszyth1', type: 'Drive Folder' },
+      { name: 'Final Drive', url: 'https://drive.google.com/drive/folders/12BheG46xp7QaqEaFWg3MVD1VxMlsZyj-', type: 'Drive Folder' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLpqy_jyQeZnH_zRZPH_dP7ENQlcAz81_9', type: 'YouTube Playlist' },
+      { name: 'ffz Videos', url: 'https://youtube.com/playlist?list=PLBENQsMXh3gz85EJ3ZCSa9l9hnUiOer-H', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLUl4u3cNGP60_JNv2MmK3wkOt9syvfQWY&si=xz6c0iOSgLWuPvlQ', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse340: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE340', type: 'SDS Webview' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQeQ_RpnnTf46jMQKw5QP4sB', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLsheiwzPKqWd_I5uRzJIDMhfYJD35WZY5&si=tdwr6sUoi_DZ0ukU', type: 'YouTube Playlist' },
+      { name: 'Drive Videos', url: 'https://drive.google.com/drive/folders/1kU-wSwXj65Sr05nvzb2q21AvypTVagps', type: 'Drive Folder' },
+      { name: 'Drive Videos', url: 'https://drive.google.com/drive/folders/1KWPpbAmhFq2O6KMiQ9obnpZU0rC_zSB4', type: 'Drive Folder' },
+      { name: 'Drive Videos', url: 'https://drive.google.com/drive/folders/1hGGhPqn_is69l5CSc5_inPgmoGzCzB2E', type: 'Drive Folder' },
+      { name: 'All materials', url: 'https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vSWcAfxURWvIEwF123nmZCAY2YwAn9xApEB46RNp8oHJKrgLwn3Qv_DRip53pqBRE36fV_OAgsNr_F2/pubhtml?gid=2060881823&single=true', type: 'Spreadsheet' },
+    ],
+  },
+  Cse341: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE341', type: 'SDS Webview' },
+      { name: 'External Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_JKPROcvmNlr1t0QWmflRIy', type: 'YouTube Playlist' },
+      { name: 'External Lab Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_KNt-hLsUqj8zZmXHO7lOl0', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wew0eD68a0g-CKIWXINje-k&si=Flmw_pFcwptBuxbo', type: 'YouTube Playlist' },
+      { name: 'Drive Notes', url: 'https://drive.google.com/drive/folders/10P66cCci4mqOP8cSyFRSZem6gFUsP1S-?usp=share_link', type: 'Drive Folder' },
+      { name: 'Project', url: 'https://github.com/Xmortian/Game-Store-in-Assembly', type: 'GitHub' },
+    ],
+  },
+  Cse350: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE350', type: 'SDS Webview' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLLpSkO6bcke6ovLtXTT7xUU1P8Gk1qT1q', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5WdRQC1a_rP-zZTpqtcDhORy&si=TSJretV0wfEO3oCb', type: 'YouTube Playlist' },
+      { name: 'Lecture Notes', url: 'https://docs.google.com/document/d/1fOEMVM9hlIeNKMB6nBvefxJ3CxKLJvpOARNUkF_xE38/edit?usp=drivesdk', type: 'Google Doc' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/1KedIZZEPtEPkrv3P-o4c-mCdDqWzfwqH?usp=sharing', type: 'Drive Folder' },
+      { name: 'Video Notes', url: 'https://docs.google.com/document/d/1Be_NeXdNTODSTrnPJgLG-cwohpezy_0dhED2ILtIpd0/edit?usp=sharing', type: 'Google Doc' },
+    ],
+  },
+  Cse360: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE360', type: 'SDS Webview' },
+      { name: 'Shakir Rouf Sir Videos', url: 'https://youtube.com/playlist?list=PL8I0kbow2q8HgpBEruOmyFA63ejc-QHaq', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLq1kE3IvmqQ67h-oXuk1dANicJ4YFNBoe', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiFz3p9soLwtlxDyT6KKCuDu', type: 'YouTube Playlist' },
+      { name: 'UJT STM32 Theory Videos', url: 'https://youtube.com/playlist?list=PLaBp58iNG2rPjeXsQmjn4GCud0X96qq8R&si=Lfkn9Qm1goMhaqAg', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse370: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE370', type: 'SDS Webview' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/1FkgbFZRvWS08QFs-BEePPkQh0O8n7Um2', type: 'Drive Folder' },
+      { name: 'Practice Sheets', url: 'https://drive.google.com/drive/folders/1IJET35EOzg30wfXER9zllV9O7g3antAU', type: 'Drive Folder' },
+      { name: 'Other Materials', url: 'https://drive.google.com/drive/folders/1h__RHPuWDTHcghiKCx6AQSNnr6n2jei9', type: 'Drive Folder' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLbrkVe8jT_YwMhF4TWw1Q9ETFrUIYjOPM', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/watch?v=LrgJFaHNBd4&list=PLOtP4f8D4mwC5A0aXwqIbOiQ0N-nTkUjw', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLolBlJ23We1WSlWl0YW-htAPf3DSJvKb5', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLgrAmbRAezuhRWTyOKPxvoiyNQfPo6Iv3&si=6G1GObcP6-kkg0mY', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse420: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE420', type: 'SDS Webview' },
+      { name: 'Nishat Nayla Miss Videos', url: 'https://www.youtube.com/playlist?list=PLvC1QCXXPlAVU0ZeGR8ca1X_q-j6I4kVm', type: 'YouTube Playlist' },
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wd9tFyYiWXcCmQpr0Lu_vm4&si=CaDOti_UgTSQosGv', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQctSUaM_mbdSpKrWO8EVJxT&si=ng6Ke4ygqjT-w7mb', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://m.youtube.com/playlist?list=PLM9X445MI6QriAQH-8ncpZW9sXawsbj1B', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse421: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE421', type: 'SDS Webview' },
+      { name: 'Course Videos', url: 'https://www.youtube.com/playlist?list=PLJh97ekrGHeKnnsQqBmP1gG4Pki1OLejM', type: 'YouTube Playlist' },
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQfdTPgMaU6PhvtGtKOgINbE', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLCh3_NUqW7_J2wA2OxXP27lyFUDBKpLpw', type: 'YouTube Playlist' },
+      { name: 'Drive Folder', url: 'https://drive.google.com/drive/folders/1MvG-zs--S50PdpmHbayl2irT8PaBjH6n', type: 'Drive Folder' },
+      { name: 'Drive Folder', url: 'https://drive.google.com/drive/folders/1AbnrDSFyytekU5kBRNobpNwtixDz82Jf', type: 'Drive Folder' },
+    ],
+  },
+  Cse422: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE422', type: 'SDS Webview' },
+      { name: 'Course Slides', url: 'https://drive.google.com/drive/folders/1R7MYfPFzh8HzMYjS6cRKlN7RFeNqJyf0', type: 'Drive Folder' },
+      { name: 'AI Videos', url: 'https://www.youtube.com/playlist?list=PLUl4u3cNGP63gFHB6xb-kVBiQHYe_4hSi', type: 'YouTube Playlist' },
+      { name: 'AI Videos', url: 'https://youtube.com/playlist?list=PLWRpUAekvxftDKhhhNBgDK1BKFzl6Qdti', type: 'YouTube Playlist' },
+      { name: 'AI Videos', url: 'https://www.youtube.com/playlist?app=desktop&list=PLCh3_NUqW7_KOLBOn6zGZWJY1MTNkshpZ', type: 'YouTube Playlist' },
+      { name: 'AI Videos', url: 'https://youtube.com/playlist?list=PLXyBH3LodMoc4_Z_G-UIowy9o5QDeaFhI&si=0QK6lmT84XskCPdn', type: 'YouTube Playlist' },
+      { name: 'Course Notes', url: 'https://drive.google.com/file/d/1nUy2OeNZ14E2zh0BP8TpQx-pJjjpd8l4/view?fbclid=IwY2xjawKgMhNleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7h9ijIzurQVDClyb-ph4CTok7uThyTfM5zWtU3NMmi_UrGY4xjm5lgYEXzSA_aem_MBq4nCpx2AQwYAy9iuPmtw&pli=1', type: 'Drive File' },
+      { name: 'General Drive', url: 'https://drive.google.com/drive/folders/159aiOW8gygSXEiTTKXP5yUu6bRTkL4k1', type: 'Drive Folder' },
+      { name: 'Midterm Questions', url: 'https://drive.google.com/drive/folders/1pJ1QOW7ytfZd6Sn8WtsP2H7N4c0air4e?fbclid=IwY2xjawKgMuJleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Drive Folder' },
+      { name: 'Final Questions', url: 'https://drive.google.com/drive/folders/1lugGN6rJecsr_PdvmqRUdmnqfbgypKpc?fbclid=IwY2xjawKgMw1leHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7ncbI4ds9jCO1xzuOaqgKlv080dZwMBhT9zEQaRBrziBaUR0fLM2yiHs12Zw_aem_L2ICVfJ5NlKidPETrJQo4A', type: 'Drive Folder' },
+    ],
+  },
+  Cse423: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE423', type: 'SDS Webview' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/playlist?list=PLq1kE3IvmqQ5ako5vkhRhY7CGL1fB5qmg', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiGEnHoenkLSTqEAmmQtaoJb', type: 'YouTube Playlist' },
+      { name: 'Notes & Slides', url: 'https://drive.google.com/drive/folders/17QRi10YRwzKIBgP90Cf3-bVltscpvxiR?fbclid=IwY2xjawKgNTZleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7h9ijIzurQVDClyb-ph4CTok7uThyTfM5zWtU3NMmi_UrGY4xjm5lgYEXzSA_aem_MBq4nCpx2AQwYAy9iuPmtw', type: 'Drive Folder' },
+      { name: 'Videos & Practice Sheet', url: 'https://drive.google.com/file/d/1lyQEgTvTdd4JuZfh7rYAS3d1rMjh0M-D/view?fbclid=IwY2xjawKgNVNleHRuA2FlbQIxMABicmlkETF1akNZWWtjMmMwQVYwcEZ0AR7nT5JhIqEWELrkrP4DaqmZG1JjnOCtNnHpLmutbknpcozFpigG-_bFdq06RA_aem_L9wcWSurxA-4waeg-PBl_w', type: 'Drive File' },
+      { name: 'Notes & Videos', url: 'https://drive.google.com/drive/u/0/folders/18jNxejAPblYXoSZ7K7UifcWuYKD5tOz_?fbclid=IwAR1gp-5zCikND5cPmZYK81c8iwuG65EmDkGG7Z7Ts7T0SvR-QLmVx7bfjyY', type: 'Drive Folder' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/1vRWaUym0OhZB0l2HeCr2cvhp5Jz6G8Mn', type: 'Drive Folder' },
+    ],
+  },
+  Cse425: {
+    resources: [
+      { name: 'MMM Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiHZZU5jdzp2SEdDOuO2iMMA&feature=shared', type: 'YouTube Playlist' },
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQcHWGNtB2JpYPhTg23M2fyV&si=9MWjqlPLENDX76i4', type: 'YouTube Playlist' },
+      { name: 'All Drive Materials', url: 'https://drive.google.com/drive/folders/1l1mo8eVB9oKwY_B_JzcqsXkyJ8HKT2dE?fbclid=IwAR1F70TuRZ5v9gkWktwdxuWM5IOJal8x0I3EVNwxRiBO-8DUcgiXKf-jBZg', type: 'Drive Folder' },
+    ],
+  },
+  Cse426: {
+    resources: [
+      { name: 'Course Videos', url: 'https://www.youtube.com/watch?v=lTSMpGEvcrY&list=PLBENQsMXh3gxal4lOjpYZFdgcq8jGaVPX', type: 'YouTube Playlist' },
+      { name: 'Notes & Videos', url: 'https://drive.google.com/drive/folders/12nowKsi2NFdNksgF2z9hB5Y9OBswhofl', type: 'Drive Folder' },
+    ],
+  },
+  Cse428: {
+    resources: [
+      { name: 'Lab & Theory Videos', url: 'https://www.youtube.com/playlist?app=desktop&list=PLn12JjJn-4YnoOsrIuREbn3BmshSI3lHS', type: 'YouTube Playlist' },
+      { name: 'MSI Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQcOyIQ5vXnbHMQNdqkAWuhq&si=zWBl0hN4X5W2RPDS', type: 'YouTube Playlist' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/1Nh7nUeK8LvNq3eVqchAVnm3oYrI4UM88?usp=drive_link', type: 'Drive Folder' },
+    ],
+  },
+  Cse437: {
+    resources: [
+      { name: 'GRA Drive Materials', url: 'https://drive.google.com/drive/folders/1yuDdWMJmGDHLpIi8oOOXGQc5wFBMVCcG', type: 'Drive Folder' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLzi4LDrZWYxbDw1iFyiJx1YPSh8GaaBlK&si=oKdtRzXyQB9qI1Mc', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse440: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLFOIrFMarApSPIwXCgl6Tw-nF4FOkF_X0&si=aCZqB2zJoP7nUhGQ', type: 'YouTube Playlist' },
+      { name: 'GitHub Repository', url: 'https://github.com/sanjana-sabah-khan/cse440', type: 'GitHub' },
+    ],
+  },
+  Cse447: {
+    resources: [
+      { name: 'MIH Videos', url: 'https://youtube.com/playlist?list=PL5IrayslvHiEiq3CreAT_3u8ujQX4SXmU&si=ae-CxSMwAcB9sROv', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse460: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE460', type: 'SDS Webview' },
+      { name: 'BuX Videos', url: 'https://www.youtube.com/watch?v=bI6yqGtp1KM&list=PLbn1ykCe23UeICjfkoruMhr3WcHWkItfa', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLcbux5FgR-JJEZLhclidmG5w6iDCAcL7Y', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLaVWjQSl4OriR3qNRAoCEr_ePRF_YwCuw', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLn12JjJn-4YkQy8uyNnkRrt4SiE4SvZDX&si=GEHEI19GNkLNnDxB', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse461: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE461', type: 'SDS Webview' },
+      { name: 'RAD Videos', url: 'https://youtube.com/playlist?list=PLkE3k0P4Vrn1iw1BCGbvFxABPjSO3ktJB&si=5YMSGA9mGIPxFCqD', type: 'YouTube Playlist' },
+      { name: 'RBR Videos', url: 'https://youtube.com/playlist?list=PLWCaK_oHHOY6sCTaTOe_fGmdALn-vh9lT', type: 'YouTube Playlist' },
+      { name: 'Combined NLY, RAD & Rafid Sir\'s Sessions', url: 'https://www.youtube.com/watch?v=jh4M4RFvujI&list=PLIIEr6BC1NsQb5v6xZLt-5e59zn6bYbdp', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLcVvBmM3BkTOU-LDEUUdMl_VN2DPgWrQj', type: 'YouTube Playlist' },
+      { name: 'Slides, Notes & Quiz', url: 'https://drive.google.com/drive/mobile/folders/1G8MDpr2eQA4exz1aCxo6v1UIar7sDDWI', type: 'Drive Folder' },
+    ],
+  },
+  Cse470: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE470', type: 'SDS Webview' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLWCaK_oHHOY7a2WmHpzoO1EnkEoMliQzv', type: 'YouTube Playlist' },
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PLjUIUiI7C4na9VCtlPmZaVTGRoYAlPaPE', type: 'YouTube Playlist' },
+      { name: 'Drive Folder', url: 'https://drive.google.com/drive/folders/1zPKxJe5xtByP6FaxDvxZBZ9N0CcETlLO', type: 'Drive Folder' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/1Wx0rmp2GPr9oZ2BsfqH4Z6X6CNzFH9h5', type: 'Drive Folder' },
+    ],
+  },
+  Cse471: {
+    resources: [
+      { name: 'Course Outlines', url: 'https://cse.sds.bracu.ac.bd/course/view/CSE471', type: 'SDS Webview' },
+      { name: 'MIH Sir\'s Recordings', url: 'https://youtube.com/playlist?list=PL9aZtK5kh5Wd9M-4rxicny-ruVi0dTTf3&si=WMu9Ey_l3GROTaE1', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLtQXTSdoymQes9f7x9gdoWXlzbWUf4t5o&si=Yl-UThrCK9dHlMvi', type: 'YouTube Playlist' },
+      { name: 'Practice Sheet', url: 'https://drive.google.com/drive/folders/1uFdJWn_HwM2Ni8GJrA5XoHMSE6F1CVw2', type: 'Drive Folder' },
+      { name: 'Previous Questions', url: 'https://drive.google.com/drive/folders/1FHfQRDlWhW6Uu5ZRbLkXAcpM-xX-Btt0', type: 'Drive Folder' },
+      { name: 'Slides', url: 'https://drive.google.com/drive/folders/11NUN4Hpj7YpLVaOm_OxwfSfvgfLGYRps', type: 'Drive Folder' },
+      { name: 'General Drive', url: 'https://drive.google.com/drive/folders/1W2Do5ztA0J4ivVoG1torWj3l5lzmCKEt', type: 'Drive Folder' },
+    ],
+  },
+  Cse474: {
+    resources: [
+      { name: 'External Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_JQaKidqDU0eIklFg3piADM', type: 'YouTube Playlist' },
+      { name: 'External Project Videos', url: 'https://youtube.com/playlist?list=PLCh3_NUqW7_IK7oOEh4-qLoU4CpWGilEH', type: 'YouTube Playlist' },
+    ],
+  },
+  Cse481: {
+    resources: [
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PL-lCYwFS3hp2T0MAwY0MmQpWaQF0pmsJv', type: 'YouTube Playlist' },
+    ],
+  },
+  'Cse482 / PHY430': {
+    resources: [
+      { name: 'Course Videos', url: 'https://youtube.com/playlist?list=PL-lCYwFS3hp1yy4K5o5yFT7BFn5bH1s8m&si=k7aHGHGX7FgN-lxX', type: 'YouTube Playlist' },
+      { name: 'BuX Videos', url: 'https://youtube.com/playlist?list=PLvj5w6iNZqVgt_bqYyfAbZb0uD4SxtZoD', type: 'YouTube Playlist' },
+    ],
+  },
+  'Code n quest': {
+    resources: [
+      { name: 'YouTube Channel', url: 'https://www.youtube.com/@codeNquest-q2j/videos', type: 'YouTube Channel' },
+    ],
+  },
 };
-
 const AdditionalScreen = () => {
     const theme = useTheme();
     const navigation = useNavigation();
@@ -495,7 +521,6 @@ const AdditionalScreen = () => {
     const [showImportantMails, setShowImportantMails] = useState(false);
     const [isQrModalVisible, setIsQrModalVisible] = useState(false);
     const [showFacultyArchive, setShowFacultyArchive] = useState(false);
-    // New state for the Course Resources section
     const [showCourseResources, setShowCourseResources] = useState(false);
     const [courseSearchQuery, setCourseSearchQuery] = useState('');
 
@@ -523,7 +548,6 @@ const AdditionalScreen = () => {
         { name: 'Important Mails', action: () => handleFeatureAction(() => setShowImportantMails(true)) },
         { name: 'Club Showcase', action: () => handleFeatureAction(() => setShowClubs(true)) },
         { name: 'Food Reviews', action: () => handleFeatureAction(() => Alert.alert('Feature Coming Soon', 'Hangout spot and food item reviews')) },
-        // Renamed 'Course Reviews' to 'Course Resources' and added action
         { name: 'Course Resources', action: () => handleFeatureAction(() => setShowCourseResources(true)) },
         { name: 'Traffic Alert', action: () => handleFeatureAction(() => Alert.alert('Feature Coming Soon', 'Alert when Heavy Traffic Near BracU')) },
     ];
@@ -704,12 +728,10 @@ const AdditionalScreen = () => {
         action();
     };
 
-    // Separate CSE and other faculty members
-    const otherFacultyMembers = faculty.filter(f => 
+    const otherFacultyMembers = faculty.filter(f =>
         (f.Department || f.department) !== 'Department of Computer Science and Engineering'
     );
     
-    // Updated search logic to filter by word
     const filteredOthersFaculty = otherFacultyMembers.filter(f => {
         const facultyText = (
             (f["Professor Name"] || f.Name || f.name || f["Faculty Name"] || '') + ' ' +
@@ -723,12 +745,9 @@ const AdditionalScreen = () => {
         return searchWords.every(word => facultyText.includes(word));
     });
     
-    // Logic for Course Resources screen
-    const filteredCourses = Object.keys(courses).filter(courseName => 
+    const filteredCourses = Object.keys(courses).filter(courseName =>
         courseName.toLowerCase().includes(courseSearchQuery.toLowerCase())
     );
-
-    // --- RENDER LOGIC ---
 
     if (showCourseResources) {
       return (
@@ -753,8 +772,8 @@ const AdditionalScreen = () => {
                             <Card.Content>
                                 <Title style={{ color: theme.colors.onSurface, marginBottom: 10 }}>{courseName}</Title>
                                 {courses[courseName].resources.map((resource, index) => (
-                                    <TouchableOpacity 
-                                        key={index} 
+                                    <TouchableOpacity
+                                        key={index}
                                         onPress={() => Linking.openURL(resource.url)}
                                         style={localStyles.resourceLinkContainer}
                                     >
@@ -980,7 +999,7 @@ const AdditionalScreen = () => {
                     <Appbar.Content title="Faculty Email Archive" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
                 </Appbar.Header>
                 <ScrollView contentContainerStyle={styles.paddingContainer}>
-                    <Card style={[styles.webviewCard, { backgroundColor: cardColors[0], marginBottom: 15, height: 120 }]}>
+                    <Card style={[localStyles.webviewCard, { backgroundColor: cardColors[0], marginBottom: 15, height: 120 }]}>
                         <TouchableOpacity onPress={() => setShowCseFacultyWebview(true)}>
                             <Card.Content style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
                                 <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>CSE</Title>
@@ -988,7 +1007,7 @@ const AdditionalScreen = () => {
                             </Card.Content>
                         </TouchableOpacity>
                     </Card>
-                    <Card style={[styles.webviewCard, { backgroundColor: cardColors[1], marginBottom: 15, height: 120 }]}>
+                    <Card style={[localStyles.webviewCard, { backgroundColor: cardColors[1], marginBottom: 15, height: 120 }]}>
                         <TouchableOpacity onPress={() => setShowOthersFaculty(true)}>
                             <Card.Content style={{ justifyContent: 'center', alignItems: 'center', flex: 1 }}>
                                 <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>Others</Title>
@@ -1130,13 +1149,52 @@ const AdditionalScreen = () => {
                                 </PaperButton>
                             </Card.Content>
                         </Card>
+                        {/* --------------------
+                        CREATOR INFO ADDED HERE
+                        -------------------- */}
+<View style={localStyles.creatorInfoContainer}>
+    <Text style={localStyles.creatorText}>A Creation of Moutmayen Nafis</Text>
+    <View style={localStyles.socialLinksContainer}>
+        <TouchableOpacity onPress={async () => {
+            const facebookProfileId = '100008544955319';
+            const facebookAppUrl = `fb://profile/${facebookProfileId}`;
+            const facebookWebUrl = 'https://www.facebook.com/moutmayen/';
+            
+            try {
+                const supported = await Linking.canOpenURL(facebookAppUrl);
+                if (supported) {
+                    await Linking.openURL(facebookAppUrl);
+                } else {
+                    await Linking.openURL(facebookWebUrl);
+                }
+            } catch (err) {
+                console.error('An error occurred with Facebook linking', err);
+                await Linking.openURL(facebookWebUrl);
+            }
+        }}>
+            <Facebook size={24} color={theme.colors.onSurface} style={localStyles.socialIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={async () => {
+            const githubWebUrl = 'https://github.com/Xmortian';
+            
+            try {
+                await Linking.openURL(githubWebUrl);
+            } catch (err) {
+                console.error('An error occurred with GitHub linking', err);
+            }
+        }}>
+            <Github size={24} color={theme.colors.onSurface} style={localStyles.socialIcon} />
+        </TouchableOpacity>
+    </View>
+</View>
                     </ScrollView>
 
-                    <QrScannerModal
+                    {/* QR Code Modal (assuming QrScannerModal is a separate component) */}
+                    {/* <QrScannerModal
                         visible={isQrModalVisible}
                         onClose={() => setIsQrModalVisible(false)}
                         onQrCodeScanned={handleQrCodeScanned}
-                    />
+                    /> */}
                 </View>
             </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -1197,6 +1255,31 @@ const localStyles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 20,
     },
+    creatorInfoContainer: {
+        marginTop: 30,
+        alignItems: 'center',
+        paddingVertical: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#ccc',
+    },
+    creatorText: {
+        fontSize: 16,
+        color: '#555',
+        marginBottom: 10,
+    },
+    socialLinksContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+    },
+    socialIcon: {
+        marginHorizontal: 10,
+    }
 });
 
 export default AdditionalScreen;
+
+
+
+
+
+
