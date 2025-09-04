@@ -108,6 +108,7 @@ function WebviewListScreen() {
         { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },
         { name: 'BRACU Library', url: 'https://library.bracu.ac.bd/' },
         { name: 'BRACU Express', url: 'https://bracuexpress.com/' },
+        { name: 'Connect Dump Analyzer', url: 'https://connect-dumps.itzmrz.xyz/?fbclid=IwZXh0bgNhZW0CMTAAYnJpZBExeW5jRnp6ZmxsbFFHQUVXZQEeRpFVC55fgVeGK9p9FfZar2Pb5J9xdxBnb0YgMtjSIiHuk6FXiFI-nXzYz-M_aem_JZNa-pmDfDf1oxKCtA0LPw' },
         { name: 'Visit our store', url: 'https://www.facebook.com/Tridenta.giftshop' },
     ];
 
