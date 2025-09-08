@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import {
-    ChevronLeft,
-    ScanText,
-} from 'lucide-react-native';
+import { ChevronLeft, ScanText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import styles from '../styles/styles';
 
 const { width } = Dimensions.get('window');
 
-const OcrScannerModal = ({ visible, onClose }) => {
+const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
     const theme = useTheme();
     const [imageUri, setImageUri] = useState(null);
     const [rawText, setRawText] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [scheduleData, setScheduleData] = useState([]);
+    
+    // scheduleData state is no longer managed here
 
     useEffect(() => {
         (async () => {
@@ -46,106 +44,165 @@ const OcrScannerModal = ({ visible, onClose }) => {
         }
     };
 
+    const extractCourseAndSection = (text) => {
+        const regex = /([A-Z]{3,4}\d{3}L?)\s*-\s*(\d{2})/;
+        const match = text.match(regex);
+        if (match && match.length > 2) {
+            return {
+                courseCode: match[1].trim(),
+                sectionName: match[2].trim(),
+            };
+        }
+        return null;
+    };
+    
+    const parseFullSchedule = (ocrBlocks) => {
+        const DAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+        const TIME_REGEX = /\d{1,2}:\d{2}\s?(AM|PM)\s*-\s*\d{1,2}:\d{2}\s?(AM|PM)/i;
+
+        const normalize = (text) =>
+            text
+                .toUpperCase()
+                .replace(/O/g, "0")
+                .replace(/\s+/g, " ")
+                .trim();
+
+        const allBlocks = ocrBlocks.filter(b => b && b.text).map(b => ({
+            ...b,
+            text: normalize(b.text),
+        }));
+
+        const routine = {};
+        DAYS.forEach(day => {
+            routine[day] = {};
+        });
+
+        const timeSlots = allBlocks.filter(block => TIME_REGEX.test(block.text)).map(block => block.text);
+        const uniqueTimeSlots = [...new Set(timeSlots)];
+
+        uniqueTimeSlots.forEach(slot => {
+            DAYS.forEach(day => {
+                if (!routine[day][slot]) {
+                    routine[day][slot] = "XXXX";
+                }
+            });
+        });
+
+        let currentDay = null;
+        let slotIndex = 0;
+
+        allBlocks.forEach(block => {
+            if (DAYS.includes(block.text)) {
+                currentDay = block.text;
+                slotIndex = 0;
+            } else if (TIME_REGEX.test(block.text)) {
+                slotIndex = uniqueTimeSlots.indexOf(block.text);
+            } else if (currentDay && slotIndex < uniqueTimeSlots.length) {
+                const slot = uniqueTimeSlots[slotIndex];
+                const courseInfo = extractCourseAndSection(block.text);
+                if (courseInfo) {
+                    routine[currentDay][slot] = courseInfo;
+                } else {
+                    routine[currentDay][slot] = "XXXX";
+                }
+                slotIndex++;
+            }
+        });
+
+        return routine;
+    };
+
     const performOcr = async (uri) => {
         setLoading(true);
         setRawText(null);
-        setScheduleData([]);
-
+        // Do not reset scheduleData here
+        
         try {
             const textResult = await TextRecognition.recognize(uri);
             const fullText = textResult.text;
             setRawText(fullText);
 
-            // Using the new, more sophisticated parsing function
             const parsedSchedule = parseFullSchedule(textResult.blocks);
-            console.log('Parsed Schedule:', parsedSchedule);
-            
-            // Convert the parsed object into an array for the FlatList/ScrollView
             const flatSchedule = Object.entries(parsedSchedule).flatMap(([day, times]) =>
-                Object.entries(times).map(([time, course]) => ({
+                Object.entries(times).map(([time, courseInfo]) => ({
                     day,
                     time,
-                    course: course.trim(), // Trim whitespace
+                    courseInfo,
                 }))
             );
 
-            // Filter out empty 'XXXX' slots for cleaner display
-            setScheduleData(flatSchedule.filter(item => item.course !== "XXXX"));
+            const response = await fetch('https://usis-cdn.eniamza.com/connect.json');
+            if (!response.ok) {
+                throw new Error('Failed to fetch live data from server.');
+            }
+            const liveData = await response.json();
+            const courseRoutines = liveData;
+
+            let finalSchedule = [];
+
+            flatSchedule.forEach(item => {
+                if (item.courseInfo && item.courseInfo.courseCode && item.courseInfo.sectionName) {
+                    const matchedCourse = courseRoutines.find(
+                        (liveItem) =>
+                            liveItem.courseCode?.toUpperCase() === item.courseInfo.courseCode.toUpperCase() &&
+                            liveItem.sectionName === item.courseInfo.sectionName
+                    );
+
+                    if (matchedCourse) {
+                        const theorySchedules = matchedCourse.sectionSchedule?.classSchedules || [];
+                        const theorySchedulesFormatted = theorySchedules.map(schedule => 
+                            `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
+                        ).join(' / ');
+
+                        finalSchedule.push({
+                            courseName: matchedCourse.courseCode,
+                            section: matchedCourse.sectionName,
+                            faculty: matchedCourse.faculties || 'N/A',
+                            room: matchedCourse.roomName || 'N/A',
+                            schedules: theorySchedulesFormatted,
+                            finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
+                            midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
+                            
+                            // To display on the home screen
+                            classTimes: matchedCourse.sectionSchedule?.classSchedules || [],
+                        });
+
+                        if (matchedCourse.labSchedules && matchedCourse.labSchedules.length > 0) {
+                            const labSchedulesFormatted = matchedCourse.labSchedules.map(schedule => 
+                                `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
+                            ).join(' / ');
+
+                            finalSchedule.push({
+                                courseName: matchedCourse.labCourseCode,
+                                section: matchedCourse.sectionName,
+                                faculty: matchedCourse.labFaculties || 'N/A',
+                                room: matchedCourse.labRoomName || 'N/A',
+                                schedules: labSchedulesFormatted,
+                                finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
+                                midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
+
+                                // To display on the home screen
+                                classTimes: matchedCourse.labSchedules || [],
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Pass the data back to the parent component
+            onScheduleFound(finalSchedule);
+            Alert.alert("Success", "Routine uploaded and saved!");
+            onClose();
 
         } catch (error) {
-            console.error('Error performing OCR:', error);
-            Alert.alert('OCR Error', 'Failed to perform OCR on the image. Please try again.');
-            setRawText(`OCR failed with error: ${error.message}`);
+            console.error('Error in OCR or data fetching:', error);
+            Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
         } finally {
             setLoading(false);
         }
     };
-
-const parseFullSchedule = (ocrBlocks) => {
-    const DAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
-    const TIME_REGEX = /\d{1,2}:\d{2}\s?(AM|PM)\s*-\s*\d{1,2}:\d{2}\s?(AM|PM)/i;
-
-    // Fix common OCR issues: O → 0, extra spaces
-    const normalize = (text) =>
-        text
-            .toUpperCase()
-            .replace(/O/g, "0")
-            .replace(/\s+/g, " ")
-            .trim();
-
-    const allBlocks = ocrBlocks.filter(b => b && b.text).map(b => ({
-        ...b,
-        text: normalize(b.text),
-    }));
-
-    const dayHeaders = [];
-    const timeSlots = [];
-    const courses = [];
-
-    allBlocks.forEach(block => {
-        if (DAYS.includes(block.text)) {
-            dayHeaders.push(block);
-        } else if (TIME_REGEX.test(block.text)) {
-            timeSlots.push(block.text);
-        } else {
-            courses.push(block);
-        }
-    });
-
-    // Deduplicate + preserve order
-    const uniqueTimeSlots = [...new Set(timeSlots)];
-
-    const routine = {};
-    DAYS.forEach(day => {
-        routine[day] = {};
-        uniqueTimeSlots.forEach(slot => {
-            routine[day][slot] = "XXXX"; // fill all blanks with XXXX
-        });
-    });
-
-    // Assign courses row by row
-    // (Very simplified version: assumes OCR gives blocks in row order)
-    let currentDay = null;
-    let slotIndex = 0;
-
-    allBlocks.forEach(block => {
-        if (DAYS.includes(block.text)) {
-            currentDay = block.text;
-            slotIndex = 0;
-        } else if (TIME_REGEX.test(block.text)) {
-            // move slotIndex to match this time
-            slotIndex = uniqueTimeSlots.indexOf(block.text);
-        } else if (currentDay && slotIndex < uniqueTimeSlots.length) {
-            // assign course
-            const slot = uniqueTimeSlots[slotIndex];
-            routine[currentDay][slot] = block.text;
-            slotIndex++;
-        }
-    });
-
-    return routine;
-};
-
+    
+    // ... (rest of the component's render method remains the same)
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
             <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
@@ -214,49 +271,6 @@ const parseFullSchedule = (ocrBlocks) => {
                                 <View style={styles.loadingContainer}>
                                     <ActivityIndicator size="large" color={theme.colors.primary} />
                                     <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Recognizing text...</Text>
-                                </View>
-                            )}
-
-                            {!loading && (
-                                <View style={styles.resultsContainer}>
-                                    {scheduleData.length > 0 && (
-                                        <View style={styles.parsedSection}>
-                                            <Title style={styles.sectionTitle}>Parsed Class Schedule</Title>
-                                            <View style={styles.tableContainer}>
-                                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scheduleScroll}>
-                                                    <View>
-                                                        <View style={[styles.scheduleItem, styles.tableHeader]}>
-                                                            <Text style={[styles.scheduleDay, styles.tableHeaderText]}>Day</Text>
-                                                            <Text style={[styles.scheduleTime, styles.tableHeaderText]}>Time</Text>
-                                                            <Text style={[styles.scheduleDetails, styles.tableHeaderText]}>Details</Text>
-                                                        </View>
-                                                        {scheduleData.map((item, index) => (
-                                                            <View key={index} style={[styles.scheduleItem, index % 2 === 0 ? styles.evenRow : styles.oddRow]}>
-                                                                <Text style={[styles.scheduleDay, { color: theme.colors.onSurface }]}>{item.day}</Text>
-                                                                <Text style={[styles.scheduleTime, { color: theme.colors.onSurface }]}>{item.time}</Text>
-                                                                <Text style={[styles.scheduleDetails, { color: theme.colors.onSurface }]}>{item.course}</Text>
-                                                            </View>
-                                                        ))}
-                                                    </View>
-                                                </ScrollView>
-                                            </View>
-                                        </View>
-                                    )}
-
-                                    {rawText && (
-                                        <View style={styles.rawSection}>
-                                            <Title style={styles.sectionTitle}>Raw OCR Text</Title>
-                                            <View style={styles.rawTextContainer} key={rawText ? 'raw-text-present' : 'raw-text-empty'}>
-                                                <Text style={[styles.rawTextOutput, { color: theme.colors.onSurface }]}>{rawText}</Text>
-                                            </View>
-                                        </View>
-                                    )}
-
-                                    {imageUri && scheduleData.length === 0 && rawText && (
-                                        <Text style={[styles.noResultsText, { color: theme.colors.onSurfaceVariant }]}>
-                                            No class schedule details were found in the image.
-                                        </Text>
-                                    )}
                                 </View>
                             )}
                         </Card.Content>

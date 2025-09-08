@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, Alert, FlatList, Linking, ActivityIndicator, StyleSheet, Image, Dimensions } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, TextInput, useTheme, List } from 'react-native-paper';
 import { Plus, Trash, UploadCloud, Phone, ChevronDown, Edit3, Eye } from 'lucide-react-native';
 import styles from '../styles/styles';
 import * as ImagePicker from 'expo-image-picker';
 import ImageViewer from 'react-native-image-zoom-viewer';
+import QrScannerModal from './QrScannerModal';
+import OcrScannerModal from './OcrScanner';
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,7 +22,29 @@ const generateSemesters = () => {
 
 const semesterOptions = generateSemesters();
 
-// --- Zoomable Image Viewer Modal Component ---
+const BlinkingDot = () => {
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setVisible(v => !v);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <View style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: 'red',
+            opacity: visible ? 1 : 0.2,
+            marginRight: 8
+        }} />
+    );
+};
+
 const ZoomableImageViewerModal = ({ visible, onClose, imageUri }) => {
     const images = imageUri ? [{ url: imageUri }] : [];
 
@@ -48,52 +72,18 @@ const ZoomableImageViewerModal = ({ visible, onClose, imageUri }) => {
     );
 };
 
-// --- Add Friend Modal Component ---
 const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
     const theme = useTheme();
     const [friendName, setFriendName] = useState('');
     const [friendContact, setFriendContact] = useState('');
-    const [isUploading, setIsUploading] = useState(false);
-    const [selectedImageUri, setSelectedImageUri] = useState(null);
     const [selectedSemester, setSelectedSemester] = useState('Summer 2025');
     const [isSemesterPickerVisible, setIsSemesterPickerVisible] = useState(false);
+    const [isQrScannerVisible, setIsQrScannerVisible] = useState(false);
+    const [isOcrScannerVisible, setIsOcrScannerVisible] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [selectedImageUri, setSelectedImageUri] = useState(null);
 
-    const handleUploadRoutine = async () => {
-        try {
-            setIsUploading(true);
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                quality: 1,
-            });
-
-            if (!result.canceled) {
-                const imageUri = result.assets[0].uri;
-                setSelectedImageUri(imageUri);
-                Alert.alert('Image Selected', 'Routine image has been selected. It will be processed later.');
-            }
-        } catch (error) {
-            console.error('Error selecting image:', error);
-            Alert.alert('Error', 'Failed to select the image.');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleSaveFriend = () => {
-        if (!friendName) {
-            Alert.alert('Error', 'Please enter a friend\'s name.');
-            return;
-        }
-        onAddFriend({
-            id: Math.random().toString(),
-            name: friendName,
-            courses: 'Processing...',
-            contact: friendContact || '',
-            routineImageUri: selectedImageUri,
-            semester: selectedSemester,
-            status_data: { type: 'Processing...' }
-        });
+    const handleCloseModal = () => {
         setFriendName('');
         setFriendContact('');
         setSelectedImageUri(null);
@@ -101,18 +91,69 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
         onClose();
     };
 
+    const handleUploadRoutine = () => {
+        Alert.alert(
+            "Select Routine Source",
+            "Do you want to upload a routine image or scan a QR code?",
+            [
+                { text: "Cancel", style: "cancel" },
+                { text: "Upload Image", onPress: () => setIsOcrScannerVisible(true) },
+                { text: "Scan QR Code", onPress: () => setIsQrScannerVisible(true) }
+            ]
+        );
+    };
+
+    const handleOcrComplete = (routineData) => {
+        setIsOcrScannerVisible(false);
+        setIsUploading(false);
+        if (routineData && routineData.length > 0) {
+            const courses = routineData.map(c => c.courseName).join(', ');
+            onAddFriend({
+                id: Math.random().toString(),
+                name: friendName,
+                courses: courses,
+                contact: friendContact || '',
+                routineData: routineData,
+                semester: selectedSemester,
+                routineImageUri: '',
+            });
+            handleCloseModal();
+            Alert.alert('Success', `Routine uploaded for ${friendName}! Found courses: ${courses}`);
+        } else {
+            Alert.alert('No Courses Found', 'OCR could not detect any courses. Please try another image.');
+        }
+    };
+
+    const handleSaveFriend = () => {
+        if (!friendName.trim()) {
+            Alert.alert('Error', 'Please enter a friend\'s name.');
+            return;
+        }
+        // Simplified save logic if no routine is uploaded yet
+        onAddFriend({
+            id: Math.random().toString(),
+            name: friendName,
+            courses: '',
+            contact: friendContact || '',
+            routineData: [],
+            semester: selectedSemester,
+            routineImageUri: '',
+        });
+        handleCloseModal();
+    };
+
     return (
         <Modal
             animationType="slide"
             transparent={true}
             visible={visible}
-            onRequestClose={onClose}
+            onRequestClose={handleCloseModal}
         >
             <View style={uiStyles.modalOverlay}>
                 <View style={[uiStyles.modalContainer, { backgroundColor: theme.colors.surface, height: 'auto' }]}>
                     <View style={uiStyles.modalHeader}>
                         <Text style={[uiStyles.modalTitle, { color: theme.colors.onSurface }]}>Add New Friend</Text>
-                        <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>Close</PaperButton>
+                        <PaperButton icon="close" onPress={handleCloseModal} mode="text" labelStyle={{ color: theme.colors.primary }}>Close</PaperButton>
                     </View>
                     <ScrollView contentContainerStyle={uiStyles.addFriendModalContent}>
                         <TextInput
@@ -142,25 +183,19 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
                             </TouchableOpacity>
                         </View>
                         
-                        <TouchableOpacity
-                            style={[uiStyles.uploadRoutineButton, { backgroundColor: theme.colors.primaryContainer, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
-                            onPress={handleUploadRoutine}
-                            disabled={isUploading}
-                        >
-                            {isUploading ? (
-                                <ActivityIndicator color={theme.colors.onPrimaryContainer} />
-                            ) : (
-                                <Text style={[uiStyles.uploadRoutineButtonText, { color: theme.colors.onPrimaryContainer }]}>
-                                    {selectedImageUri ? 'Routine Selected' : 'Upload Routine'}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                        
                         <PaperButton
                             mode="contained"
-                            onPress={handleSaveFriend}
+                            onPress={handleUploadRoutine}
                             style={{ marginTop: 20 }}
                             labelStyle={{ color: theme.colors.onPrimary }}
+                        >
+                            Upload Routine
+                        </PaperButton>
+                        <PaperButton
+                            mode="outlined"
+                            onPress={handleSaveFriend}
+                            style={{ marginTop: 10, borderColor: theme.colors.primary }}
+                            labelStyle={{ color: theme.colors.primary }}
                         >
                             Save Friend
                         </PaperButton>
@@ -199,56 +234,60 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
                     </View>
                 </View>
             </Modal>
+            <QrScannerModal
+                visible={isQrScannerVisible}
+                onClose={() => setIsQrScannerVisible(false)}
+            />
+            <OcrScannerModal
+                visible={isOcrScannerVisible}
+                onClose={() => setIsOcrScannerVisible(false)}
+                onScheduleFound={handleOcrComplete}
+            />
         </Modal>
     );
 };
 
-// --- Edit Friend Modal Component ---
 const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
     const theme = useTheme();
     const [editedContact, setEditedContact] = useState(friend.contact);
     const [selectedSemester, setSelectedSemester] = useState(friend.semester);
     const [isSemesterPickerVisible, setIsSemesterPickerVisible] = useState(false);
-    const [isReuploading, setIsReuploading] = useState(false);
+    const [isQrScannerVisible, setIsQrScannerVisible] = useState(false);
+    const [isOcrScannerVisible, setIsOcrScannerVisible] = useState(false);
 
     const handleReuploadRoutine = async () => {
         Alert.alert(
-            'Reupload Routine',
-            'Select a new routine image and semester.',
+            'Re-upload Routine',
+            'Select a new routine source.',
             [
                 { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Continue',
-                    onPress: async () => {
-                         try {
-                            setIsReuploading(true);
-                            const result = await ImagePicker.launchImageLibraryAsync({
-                                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                                allowsEditing: true,
-                                quality: 1,
-                            });
-                            if (!result.canceled) {
-                                const newRoutineImageUri = result.assets[0].uri;
-                                const newCourses = 'Processing...'; 
-                                const newStatus = 'Processing...';
-                                onSave({ ...friend, courses: newCourses, status: newStatus, routineImageUri: newRoutineImageUri, semester: selectedSemester });
-                                Alert.alert('Success', 'New routine selected. It is being processed.');
-                                onClose();
-                            }
-                        } catch (error) {
-                            console.error('Error re-uploading image:', error);
-                            Alert.alert('Error', 'Failed to re-upload routine.');
-                        } finally {
-                            setIsReuploading(false);
-                        }
-                    },
-                },
+                { text: 'Upload Image', onPress: () => setIsOcrScannerVisible(true) },
+                { text: 'Scan QR Code', onPress: () => setIsQrScannerVisible(true) }
             ]
         );
     };
 
+    const handleOcrComplete = (routineData) => {
+        setIsOcrScannerVisible(false);
+        const newCourses = routineData.map(c => c.courseName).join(', ');
+        const updatedFriend = {
+            ...friend,
+            courses: newCourses,
+            routineData: routineData,
+            semester: selectedSemester,
+        };
+        onSave(updatedFriend);
+        Alert.alert('Success', 'New routine uploaded and processed.');
+        onClose();
+    };
+
     const handleSave = () => {
-        onSave({ ...friend, contact: editedContact, semester: selectedSemester });
+        const updatedFriend = {
+            ...friend,
+            contact: editedContact,
+            semester: selectedSemester,
+        };
+        onSave(updatedFriend);
         onClose();
     };
 
@@ -338,11 +377,19 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
                     </View>
                 </View>
             </Modal>
+            <QrScannerModal
+                visible={isQrScannerVisible}
+                onClose={() => setIsQrScannerVisible(false)}
+            />
+            <OcrScannerModal
+                visible={isOcrScannerVisible}
+                onClose={() => setIsOcrScannerVisible(false)}
+                onScheduleFound={handleOcrComplete}
+            />
         </Modal>
     );
 };
 
-// --- FriendsScreen Component ---
 const FriendsScreen = () => {
     const theme = useTheme();
 
@@ -354,17 +401,123 @@ const FriendsScreen = () => {
     };
 
     const [friends, setFriends] = useState([
-        { id: '1', name: 'Alice Smith', courses: 'MAT216, CSE230, PHY110', status: 'Off day', contact: '01234567890', semester: 'Summer 2025', routineImageUri: 'https://via.placeholder.com/300/00C853/FFFFFF?text=Routine+Alice' },
-        { id: '2', name: 'Bob Johnson', courses: 'CSE470, EEE300', status: 'In a Class Gap(next class in 1 hour)', contact: '01234567891', semester: 'Fall 2024', routineImageUri: 'https://via.placeholder.com/300/FF5733/FFFFFF?text=Routine+Bob' },
-        { id: '3', name: 'Charlie Brown', courses: 'CSE110, MAT120', status: 'First Class Begins at 2pm', contact: '01234567892', semester: 'Summer 2025', routineImageUri: '' },
-        { id: '4', name: 'Diana Prince', courses: 'BBA101, ECO101', status: 'Last class finished at 5pm', contact: '', semester: 'Spring 2025', routineImageUri: '' },
-        { id: '5', name: 'Emily White', courses: 'ENG101, LAW200', status: 'At Class in 9B-24L', contact: '', semester: 'Spring 2025', routineImageUri: '' },
+        { id: '1', name: 'Alice Smith', courses: 'MAT216, CSE230, PHY110', status: 'Off day', contact: '01234567890', semester: 'Summer 2025', routineImageUri: 'https://via.placeholder.com/300/00C853/FFFFFF?text=Routine+Alice', routineData: [] },
+        { id: '2', name: 'Bob Johnson', courses: 'CSE470, EEE300', status: 'Class Gap (Next class in 1 hour 20 minutes)', contact: '01234567891', semester: 'Fall 2024', routineImageUri: 'https://via.placeholder.com/300/FF5733/FFFFFF?text=Routine+Bob', routineData: [] },
+        { id: '3', name: 'Charlie Brown', courses: 'CSE110, MAT120', status: 'First Class Begins in 2 hours', contact: '01234567892', semester: 'Summer 2025', routineImageUri: '', routineData: [] },
+        { id: '4', name: 'Diana Prince', courses: 'BBA101, ECO101', status: 'Last class Ended in 30 minutes', contact: '', semester: 'Spring 2025', routineImageUri: '', routineData: [] },
+        { id: '5', name: 'Emily White', courses: 'ENG101, LAW200', status: 'Classing in 9B-24L', contact: '', semester: 'Spring 2025', routineImageUri: '', routineData: [] },
     ]);
     const [isAddFriendModalVisible, setIsAddFriendModalVisible] = useState(false);
     const [isEditFriendModalVisible, setIsEditFriendModalVisible] = useState(false);
     const [currentFriend, setCurrentFriend] = useState(null);
     const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState(null);
+
+    const getMinutesSinceLastClass = (endTime) => {
+        const now = new Date();
+        const [endHour, endMinute] = endTime.match(/\d{1,2}/g).map(Number);
+        const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute, 0, 0);
+        const diffInMs = now.getTime() - endDateTime.getTime();
+        return Math.floor(diffInMs / 60000);
+    };
+
+    const getMinutesUntilNextClass = (startTime) => {
+        const now = new Date();
+        const [startHour, startMinute] = startTime.match(/\d{1,2}/g).map(Number);
+        const startDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute, 0, 0);
+        const diffInMs = startDateTime.getTime() - now.getTime();
+        return Math.floor(diffInMs / 60000);
+    };
+
+    const formatTimeDifference = (minutes) => {
+        if (minutes < 0) return 'in the past';
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        let result = '';
+        if (hours > 0) {
+            result += `${hours} hour${hours > 1 ? 's' : ''}`;
+        }
+        if (mins > 0) {
+            if (result) result += ' ';
+            result += `${mins} minute${mins > 1 ? 's' : ''}`;
+        }
+        return result || 'less than a minute';
+    };
+
+    const getFriendStatus = (routineData) => {
+        if (!routineData || routineData.length === 0) {
+            return 'No routine uploaded';
+        }
+        
+        const now = new Date();
+        const today = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(now).toUpperCase();
+        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+        const todaysClasses = routineData.flatMap(course =>
+            course.classTimes
+                .filter(c => c.day.toUpperCase() === today)
+                .map(c => ({
+                    startTime: parseInt(c.startTime.replace(':', ''), 10),
+                    endTime: parseInt(c.endTime.replace(':', ''), 10),
+                    roomName: c.roomName || course.room
+                }))
+        );
+
+        if (todaysClasses.length === 0) {
+            return 'Off day';
+        }
+
+        todaysClasses.sort((a, b) => a.startTime - b.startTime);
+
+        const firstClass = todaysClasses[0];
+        const lastClass = todaysClasses[todaysClasses.length - 1];
+
+        // Currently in a class
+        for (const cls of todaysClasses) {
+            if (currentTimeInMinutes >= cls.startTime && currentTimeInMinutes < cls.endTime) {
+                return `Classing in ${cls.roomName}`;
+            }
+        }
+
+        // Before first class
+        if (currentTimeInMinutes < firstClass.startTime) {
+            const minutesUntil = getMinutesUntilNextClass(firstClass.startTime.toString());
+            const formattedTime = formatTimeDifference(minutesUntil);
+            return `First Class Begins in ${formattedTime}`;
+        }
+
+        // After last class
+        if (currentTimeInMinutes >= lastClass.endTime) {
+            const minutesSince = getMinutesSinceLastClass(lastClass.endTime.toString());
+            const formattedTime = formatTimeDifference(minutesSince);
+            return `Last class ended ${formattedTime} ago`;
+        }
+        
+        // In a class gap
+        for (let i = 0; i < todaysClasses.length - 1; i++) {
+            const currentClassEnd = todaysClasses[i].endTime;
+            const nextClassStart = todaysClasses[i + 1].startTime;
+            if (currentTimeInMinutes >= currentClassEnd && currentTimeInMinutes < nextClassStart) {
+                const minutesFree = getMinutesUntilNextClass(todaysClasses[i + 1].startTime.toString());
+                const formattedTime = formatTimeDifference(minutesFree);
+                return `Class Gap (Free for ${formattedTime})`;
+            }
+        }
+
+        return 'Status not determined';
+    };
+
+    const getUniqueCourses = (routineData) => {
+        const uniqueCourses = new Set();
+        return routineData.filter(course => {
+            const baseCourseName = course.courseName.replace(/L$/, '');
+            if (!uniqueCourses.has(baseCourseName)) {
+                uniqueCourses.add(baseCourseName);
+                return true;
+            }
+            return false;
+        });
+    };
 
     const handleViewRoutine = (imageUri) => {
         if (!imageUri) {
@@ -411,8 +564,13 @@ const FriendsScreen = () => {
     };
 
     const renderFriendItem = ({ item }) => {
-        const courses = item.courses.split(',').map(course => ({ key: course.trim(), courseName: course.trim() }));
-    
+        const courses = getUniqueCourses(item.routineData).map((course, index) => ({ 
+            key: `${item.id}-${course.courseName}-${index}`,
+            courseName: course.courseName
+        }));
+        
+        const dynamicStatus = getFriendStatus(item.routineData);
+
         return (
             <Card style={[uiStyles.friendCard, { backgroundColor: theme.colors.surface }]}>
                 <Card.Content style={uiStyles.friendCardContent}>
@@ -423,13 +581,11 @@ const FriendsScreen = () => {
                     </View>
                     <View style={{ flex: 1, marginRight: 60 }}>
                         <Title style={{ color: theme.colors.onSurface }}>{item.name}</Title>
-
                         <View style={[uiStyles.smallBadge, { backgroundColor: colorPalette.semester, marginTop: 5 }]}>
                             <Text style={[uiStyles.badgeText, { color: 'black' }]}>
                                 {item.semester}
                             </Text>
                         </View>
-
                         <View style={{ marginTop: 5 }}>
                             <FlatList
                                 horizontal
@@ -445,13 +601,12 @@ const FriendsScreen = () => {
                                 keyExtractor={courseItem => courseItem.key}
                             />
                         </View>
-
                         <View style={[uiStyles.statusBadge, { backgroundColor: colorPalette.status, marginTop: 10 }]}>
-                            <Text style={[uiStyles.badgeText, { color: 'black' }]}>
-                                {item.status}
+                            <BlinkingDot />
+                            <Text style={[uiStyles.badgeText, { color: 'black', flexShrink: 1 }]}>
+                                {dynamicStatus}
                             </Text>
                         </View>
-
                         {item.contact && (
                             <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.contact}`)} style={[uiStyles.contactBadge, { backgroundColor: colorPalette.contact, marginTop: 15, flexDirection: 'row', alignItems: 'center' }]}>
                                 <Text style={[uiStyles.badgeText, { color: 'black', marginRight: 8 }]}>
@@ -467,7 +622,7 @@ const FriendsScreen = () => {
                                 <Eye size={24} color={theme.colors.onSurfaceVariant} />
                             </TouchableOpacity>
                         ) : (
-                            <Eye size={24} color={theme.colors.backdrop} /> 
+                            <Eye size={24} color={theme.colors.backdrop} />
                         )}
                     </View>
                     <View style={uiStyles.cardActionsBottomRight}>
@@ -632,7 +787,6 @@ const uiStyles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    // Styles for the badges
     smallBadge: {
         alignSelf: 'flex-start',
         paddingHorizontal: 15,
@@ -652,7 +806,8 @@ const uiStyles = StyleSheet.create({
         paddingVertical: 5,
         borderRadius: 10,
         marginTop: 10,
-        width: 200, // Fixed width
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     contactBadge: {
         alignSelf: 'flex-start',
