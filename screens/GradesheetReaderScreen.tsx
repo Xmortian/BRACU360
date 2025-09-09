@@ -1,124 +1,76 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Image, TouchableOpacity, Alert, FlatList, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import { Plus, Edit, Trash, Bell, ChevronLeft, ScanText } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import ImageCropPicker from 'react-native-image-crop-picker';
-import TextRecognition from '@react-native-ml-kit/text-recognition';
+import { ChevronLeft, FileText } from 'lucide-react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system'; // Expo FileSystem is crucial for reading local files
 import styles from '../styles/styles';
 
 const GradesheetScannerModal = ({ visible, onClose }) => {
     const theme = useTheme();
-    const [imageUris, setImageUris] = useState([]);
+    const [pdfUri, setPdfUri] = useState(null);
     const [rawText, setRawText] = useState(null);
     const [loading, setLoading] = useState(false);
     const [gradesheetData, setGradesheetData] = useState([]);
     const [errorModalVisible, setErrorModalVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [selectedImages, setSelectedImages] = useState([]); // This state is now the source of truth for total images
     
-    // showError function remains the same
     const showError = (message) => {
         setErrorMessage(message);
         setErrorModalVisible(true);
     };
 
-    const pickImages = async () => {
+    const pickPdf = async () => {
         try {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-                showError('Permission to access media library is required to pick images.');
-                return;
-            }
-
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsMultipleSelection: true,
-                selectionLimit: 7,
-                quality: 1,
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/pdf',
+                copyToCacheDirectory: true, // This is important for accessing the file later
             });
 
-            if (!result.canceled && result.assets) {
-                // Set selectedImages and then immediately start the cropping process
-                setSelectedImages(result.assets);
-                setImageUris([]);
-                if (result.assets.length > 0) {
-                    cropNextImage(result.assets, 0, result.assets.length, []);
-                }
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const selectedPdf = result.assets[0];
+                setPdfUri(selectedPdf.uri);
+                setRawText(null);
+                setGradesheetData([]);
+                
+                // Immediately start processing the PDF
+                await processPdf(selectedPdf.uri);
             }
         } catch (error) {
-            console.error('Error picking images:', error);
-            showError('Failed to pick images. Please try again.');
-        }
-    };
-
-    // Updated cropNextImage to pass index and total count
-    const cropNextImage = async (imagesToCrop, currentImageIndex, totalImages, uris) => {
-        if (imagesToCrop.length === 0) {
-            setImageUris(uris);
-            setRawText(null);
-            setGradesheetData([]);
-            return;
-        }
-
-        const currentImage = imagesToCrop[0];
-        try {
-            const cropped = await ImageCropPicker.openCropper({
-                path: currentImage.uri,
-                width: 0,
-                height: 0,
-                cropping: true,
-                freeStyleCropEnabled: true,
-                cropperToolbarTitle: `Page ${currentImageIndex + 1} of ${totalImages}`, // 👈 Fixed counter logic
-            });
-
-            const newUris = [...uris, cropped.path];
-            cropNextImage(imagesToCrop.slice(1), currentImageIndex + 1, totalImages, newUris);
-        } catch (error) {
-            console.log('Cropping cancelled or failed:', error);
-            setImageUris(uris);
-            setRawText(null);
-            setGradesheetData([]);
+            console.error('Error picking PDF:', error);
+            showError('Failed to pick PDF. Please try again.');
         }
     };
     
-    // performOcrOnImages and handleDone remain the same
-    const performOcrOnImages = async (uris) => {
+    // This is the core logic change.
+    const processPdf = async (uri) => {
         setLoading(true);
         setRawText(null);
         setGradesheetData([]);
 
         try {
-            const allExtractedText = [];
-            for (const uri of uris) {
-                const textResult = await TextRecognition.recognize(uri);
-                allExtractedText.push(textResult.text);
-            }
+            // Read the content of the PDF file as a string.
+            // This is possible for machine-readable PDFs.
+            const fileContent = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.UTF8,
+            });
             
-            const combinedText = allExtractedText.join('\n\n');
-            setRawText(combinedText);
+            setRawText(fileContent);
             
-            const parsedData = parseGradesheetData(combinedText);
+            // Now, parse the text to extract gradesheet data.
+            const parsedData = parseGradesheetData(fileContent);
             setGradesheetData(parsedData);
 
         } catch (error) {
-            console.error('Error performing OCR:', error);
-            showError(`Failed to perform OCR on images: ${error.message}`);
-            setRawText(`OCR failed with error: ${error.message}`);
+            console.error('Error processing PDF:', error);
+            showError(`Failed to process PDF: ${error.message}. Is the PDF machine-readable?`);
+            setRawText(`Failed to read PDF with error: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
-    
-    const handleDone = async () => {
-        if (imageUris.length === 0) {
-            showError('Please select and crop at least one image.');
-            return;
-        }
-        await performOcrOnImages(imageUris);
-    };
-    
-    // parseGradesheetData remains the same
+
+    // The parsing logic remains the same, as it's just processing the text.
     const parseGradesheetData = (fullText) => {
         if (!fullText) return [];
         const lines = fullText.split('\n');
@@ -166,7 +118,6 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
                         onPress={onClose}
                     />
                     <Appbar.Content title="Gradesheet Scanner" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
-                    {/* The notification icon has been removed as requested. */}
                 </Appbar.Header>
 
                 <ScrollView contentContainerStyle={styles.paddingContainer}>
@@ -177,47 +128,35 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
                                     Gradesheet Scanner
                                 </Title>
                                 <Paragraph style={[styles.cardParagraph, { color: theme.colors.onSurfaceVariant }]}>
-                                    Pick up to 7 photos of your gradesheet to extract the details.
+                                    Select a machine-readable PDF gradesheet to extract the details.
                                 </Paragraph>
 
                                 <PaperButton
                                     mode="contained"
-                                    onPress={pickImages}
+                                    onPress={pickPdf}
                                     disabled={loading}
                                     style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
                                     labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
-                                    icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
+                                    icon={() => <FileText size={20} color={theme.colors.onPrimary} />}
                                 >
-                                    Pick Images from Gallery
+                                    Pick PDF
                                 </PaperButton>
                             </View>
 
-                            {imageUris.length > 0 && (
-                                <View style={[styles.imagePreviewContainer, { borderColor: theme.colors.outlineVariant }]}>
-                                    <ScrollView horizontal contentContainerStyle={styles.imagePreviewScroll} showsHorizontalScrollIndicator={false}>
-                                        {imageUris.map((uri, index) => (
-                                            <Image key={index} source={{ uri }} style={styles.imagePreview} resizeMode="cover" />
-                                        ))}
-                                    </ScrollView>
+                            {/* PDF preview section (optional) */}
+                            {pdfUri && (
+                                <View style={modalStyles.pdfPreviewContainer}>
+                                    <Text style={[modalStyles.pdfNameText, { color: theme.colors.onSurface }]}>
+                                        Selected PDF: {pdfUri.split('/').pop()}
+                                    </Text>
+                                    {/* You could add a PDF viewer component here, but this is sufficient for now */}
                                 </View>
-                            )}
-                            
-                            {imageUris.length > 0 && (
-                                <PaperButton
-                                    mode="contained"
-                                    onPress={handleDone}
-                                    disabled={loading}
-                                    style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
-                                    labelStyle={[styles.scanButtonLabel, { color: theme.colors.onPrimary }]}
-                                >
-                                    {loading ? "Scanning..." : "Done"}
-                                </PaperButton>
                             )}
 
                             {loading && (
                                 <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
                                     <ActivityIndicator size="large" color={theme.colors.primary} />
-                                    <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Scanning {imageUris.length} images...</Text>
+                                    <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Reading PDF...</Text>
                                 </View>
                             )}
 
@@ -248,15 +187,15 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
                                     )}
                                     {rawText && (
                                         <View style={styles.rawSection}>
-                                            <Title style={[styles.ocrSectionTitle, { color: theme.colors.onSurface }]}>Raw OCR Text</Title>
+                                            <Title style={[styles.ocrSectionTitle, { color: theme.colors.onSurface }]}>Raw PDF Text</Title>
                                             <View style={[styles.rawTextContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
                                                 <Text style={[styles.rawTextOutput, { color: theme.colors.onSurface }]}>{rawText}</Text>
                                             </View>
                                         </View>
                                     )}
-                                    {imageUris.length > 0 && gradesheetData.length === 0 && rawText && (
+                                    {pdfUri && gradesheetData.length === 0 && rawText && (
                                         <Text style={[styles.noResultsText, { color: theme.colors.onSurfaceVariant }]}>
-                                            No gradesheet data was found in the images.
+                                            No gradesheet data was found in the PDF. The file may not match the expected format.
                                         </Text>
                                     )}
                                 </View>
@@ -291,13 +230,25 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
     );
 };
 
-// New styles for the modal overlay and container
 const modalStyles = StyleSheet.create({
     modalContainer: {
         flex: 1,
         backgroundColor: '#fff',
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
+    },
+    pdfPreviewContainer: {
+        marginTop: 16,
+        padding: 10,
+        backgroundColor: '#f0f0f0',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ccc',
+    },
+    pdfNameText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 });
 
