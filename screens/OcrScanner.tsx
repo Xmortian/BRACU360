@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions, StyleSheet } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import { ChevronLeft, ScanText } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -202,7 +202,6 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
         }
     };
     
-    // ... (rest of the component's render method remains the same)
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
             <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
@@ -216,6 +215,11 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                 </Appbar.Header>
 
                 <ScrollView contentContainerStyle={styles.paddingContainer}>
+                    <Text style={localStyles.warningText}>
+                        <Text style={{fontWeight: 'bold'}}>Warning: </Text>
+                        The routine data relies on CONNECT's database. Errors may occur near the end of a semester before the new data is renewed. For best results, please upload your routine after a new semester begins.
+                    </Text>
+                    
                     <Card style={[styles.mainCard, { marginBottom: 20 }]}>
                         <Card.Content style={{ alignItems: 'center', backgroundColor: '#000000', borderRadius: 10 }}>
                             <Image
@@ -226,13 +230,13 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                                 Class Routine Upload
                             </Title>
                             <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                                Step 1: Log in to Connect.
+                                Log in to Connect.
                             </Paragraph>
                             <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                                Step 2: Take a screenshot of your class routine.
+                                Take a screenshot of class routine.
                             </Paragraph>
                             <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                                Step 3: Upload the screenshot!
+                                Upload the screenshot!
                             </Paragraph>
                         </Card.Content>
                     </Card>
@@ -280,5 +284,24 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
         </Modal>
     );
 };
+
+const localStyles = StyleSheet.create({
+    warningText: {
+        fontSize: 14,
+        color: 'white',
+        backgroundColor: 'rgba(255, 165, 0, 0.7)',
+        padding: 10,
+        borderRadius: 8,
+        textAlign: 'center',
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: 'orange',
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+});
 
 export default OcrScannerModal;

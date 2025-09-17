@@ -5,7 +5,7 @@ import { ChevronLeft, FileText, CircleX } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import styles from '../styles/styles';
 
-const GradesheetScannerModal = ({ visible, onClose }) => {
+const GradesheetScannerModal = ({ visible, onClose, onScanComplete }) => {
     const theme = useTheme();
     const [loading, setLoading] = useState(false);
     const [rawText, setRawText] = useState(null);
@@ -31,7 +31,7 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
                 setCountdown(prevCount => {
                     if (prevCount === 1) {
                         clearInterval(timer);
-                        setColdStartMessage('Still waiting... This may take a moment.');
+                        setColdStartMessage('Analyzing Information.');
                         return 0;
                     }
                     return prevCount - 1;
@@ -93,7 +93,8 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
                             setRawText(extractedText);
                             const parsedData = parseGradesheetData(extractedText);
                             setParsedGradesheet(parsedData);
-                            
+                            if (onScanComplete) onScanComplete(parsedData); 
+
                             console.log("Parsed Gradesheet Data:", JSON.stringify(parsedData, null, 2));
                         }
                     } else {
@@ -313,7 +314,7 @@ const GradesheetScannerModal = ({ visible, onClose }) => {
                                 <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant }]}>
                                     <ActivityIndicator size="large" color={theme.colors.primary} />
                                     <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>
-                                        {countdown > 0 ? `Cold start... Time remaining: ${countdown}s` : coldStartMessage}
+                                        {countdown > 0 ? `Starting Server... Time remaining: ${countdown}s` : coldStartMessage}
                                     </Text>
                                 </View>
                             )}

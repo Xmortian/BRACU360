@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, Image, StyleSheet, Dimensions } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import { Bell, Plus } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import StarBorder from './StarBorder';
 import CgpaCalcModal from './CgpaCalc';
 import GradesheetScannerModal from './GradesheetReaderScreen';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 
-// --- Import the shared styles file ---
 import styles from '../styles/styles';
 
 const screenWidth = Dimensions.get('window').width;
 
-// Dummy data for semester grades and GPA
+// Dummy data (remains as a fallback)
 const dummyGradesData = [
     {
         semester: 'Spring 2022',
@@ -35,34 +34,7 @@ const dummyGradesData = [
             { code: 'ENG102', name: 'English II', grade: 'B+', points: 3.50, credits: 3 },
         ],
     },
-    {
-        semester: 'Fall 2022',
-        gpa: 3.65,
-        credits: 15,
-        courses: [
-            { code: 'CSE220', name: 'Data Structures', grade: 'A-', points: 3.70, credits: 3 },
-            { code: 'CSE221', name: 'Algorithms', grade: 'A', points: 4.00, credits: 3 },
-            { code: 'EEE101', name: 'Basic Electrical Eng.', grade: 'B', points: 3.00, credits: 3 },
-            { code: 'HUM101', name: 'Bangladesh Studies', grade: 'A', points: 4.00, credits: 3 },
-            { code: 'STA201', name: 'Statistics', grade: 'B+', points: 3.50, credits: 3 },
-        ],
-    },
-    {
-        semester: 'Spring 2023',
-        gpa: 3.80,
-        credits: 12,
-        courses: [
-            { code: 'CSE250', name: 'Computer Architecture', grade: 'A', points: 4.00, credits: 3 },
-            { code: 'CSE251', name: 'Digital Logic Design', grade: 'A-', points: 3.70, credits: 3 },
-            { code: 'PHY111', name: 'Physics II', grade: 'A', points: 4.00, credits: 3 },
-            { code: 'BUS201', name: 'Accounting', grade: 'B+', points: 3.50, credits: 3 },
-        ],
-    },
 ];
-
-const totalCredits = dummyGradesData.reduce((sum, semester) => sum + semester.credits, 0);
-const totalPoints = dummyGradesData.reduce((sum, semester) => sum + (semester.gpa * semester.credits), 0);
-const cumulativeCgpa = (totalPoints / totalCredits).toFixed(2);
 
 // --- Quiz Modal Component ---
 function QuizModal({ visible, onClose, onQuizComplete }) {
@@ -118,26 +90,48 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
             ],
         },
         {
-            question: "Choose one of the following:",
+            question: "Choose a weekeed destination plan:",
             options: [
-                { text: "Mont Blanc", house: "Danshiri" },
-                { text: "Hand of the Shadows", house: "Chayaneer" },
-                { text: "Mid Fortress", house: "Moyurpankhi" },
-                { text: "Stargazer", house: "Drubotara" },
-                { text: "High Tower", house: "Meghdut" },
+                { text: "Narnia", house: "Danshiri" },
+                { text: "Skellige ", house: "Chayaneer" },
+                { text: "Rivendell", house: "Moyurpankhi" },
+                { text: "Winterfell", house: "Drubotara" },
+                { text: "Azkaban", house: "Meghdut" },
             ],
         },
         {
-            question: "If you could have any of the following power, which would you choose?",
+            question: "If you could have any of the following gadget, which would you choose?",
             options: [
-                { text: "Power to change your gradesheet", house: "Danshiri" },
-                { text: "Power to wage war against BracU IT", house: "Chayaneer" },
-                { text: "Power to make your crush fall in love with you", house: "Moyurpankhi" },
-                { text: "Power to rot all day everyday", house: "Meghdut" },
-                { text: "Power to teleport", house: "Drubotara" },
+                { text: "An App that can change your gradesheet", house: "Danshiri" },
+                { text: "A Backpack that makes assignments finish themselves overnight", house: "Moyurpankhi" },
+                { text: "A group project charm that makes your teammates actually contribute", house: "Chayaneer" },
+                { text: "A calendar that bends deadlines to your convenience", house: "Meghdut" },
+                { text: "A campus map that always shows where free food is being served", house: "Drubotara" },
             ],
         },
+        {
+            question: "Choose a preferred condition",
+            options: [
+                { text: "Sunny with a gentle breeze", house: "Chayaneer" },
+                { text: "Heavy rain and thunderstorms", house: "Meghdut" },
+                { text: "Clear, starry night", house: "Drubotara" },
+                { text: "A quiet, misty morning", house: "Danshiri" },
+                { text: "A vibrant rainbow after a shower", house: "Moyurpankhi" },
+            ],
+        },
+        {
+            question: "Which magical item would you want?",
+            options: [
+                { text: "A Wand that reins supreme", house: "Drubotara" },
+                { text: "A Compass that does not point North", house: "Chayaneer" },
+                { text: "A Quill that writes the perfect story", house: "Moyurpankhi" },
+                { text: "Ancient texts that bend time and reality", house: "Meghdut" },
+                { text: "A magical map that reveals everything", house: "Danshiri" },
+            ],
+        },
+
     ];
+
 
     const handleAnswer = (selectedHouse) => {
         setHouseScores((prevScores) => ({
@@ -165,34 +159,23 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
             }
         }
 
-        if (winners.length > 1) {
+        if (winners.length > 0) {
             const randomIndex = Math.floor(Math.random() * winners.length);
             const randomWinner = winners[randomIndex];
             setWinnerHouse(randomWinner);
             onQuizComplete(randomWinner);
-        } else if (winners.length === 1) {
-            setWinnerHouse(winners[0]);
-            onQuizComplete(winners[0]);
         } else {
             setWinnerHouse('No winner determined');
             onQuizComplete(null);
         }
-
         setQuizCompleted(true);
     };
 
     const restartQuiz = () => {
         setCurrentQuestionIndex(0);
-        setHouseScores({
-            Danshiri: 0,
-            Chayaneer: 0,
-            Moyurpankhi: 0,
-            Drubotara: 0,
-            Meghdut: 0,
-        });
+        setHouseScores({ Danshiri: 0, Chayaneer: 0, Moyurpankhi: 0, Drubotara: 0, Meghdut: 0 });
         setQuizCompleted(false);
         setWinnerHouse('');
-        onClose();
     };
 
     useEffect(() => {
@@ -204,12 +187,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
     const currentQuestion = quizQuestions[currentQuestionIndex];
 
     return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
-        >
+        <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
             <View style={styles.modalOverlay}>
                 <View style={[styles.modalContainer, { backgroundColor: theme.colors.surface }]}>
                     <View style={styles.modalHeader}>
@@ -219,20 +197,27 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
                     <ScrollView style={styles.modalContentScroll}>
                         {!quizCompleted ? (
                             <View>
-                                <Text style={[styles.questionText, { color: theme.colors.onSurface }]}>
-                                    {currentQuestionIndex + 1}. {currentQuestion.question}
-                                </Text>
-                                {currentQuestion.options.map((option, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={[styles.optionButton, { backgroundColor: theme.colors.primaryContainer }]}
-                                        onPress={() => handleAnswer(option.house)}
-                                    >
-                                        <Text style={[styles.optionButtonText, { color: theme.colors.onPrimaryContainer }]}>
-                                            {option.text}
+                                {/* Corrected the logic to handle the state correctly */}
+                                {currentQuestion ? (
+                                    <>
+                                        <Text style={[styles.questionText, { color: theme.colors.onSurface }]}>
+                                            {currentQuestionIndex + 1}. {currentQuestion.question}
                                         </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                        {currentQuestion.options.map((option, index) => (
+                                            <TouchableOpacity
+                                                key={index}
+                                                style={[styles.optionButton, { backgroundColor: theme.colors.primaryContainer }]}
+                                                onPress={() => handleAnswer(option.house)}
+                                            >
+                                                <Text style={[styles.optionButtonText, { color: theme.colors.onPrimaryContainer }]}>
+                                                    {option.text}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <Text>Quiz is loading...</Text>
+                                )}
                             </View>
                         ) : (
                             <View style={styles.quizResultsContainer}>
@@ -247,7 +232,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
                                 )}
                                 <PaperButton
                                     mode="contained"
-                                    onPress={restartQuiz}
+                                    onPress={onClose}
                                     style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
                                     labelStyle={{ color: theme.colors.onPrimary }}
                                 >
@@ -262,13 +247,14 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
     );
 }
 
-// --- ProfileScreen Component ---
+// --- Profile Screen Component ---
 const ProfileScreen = () => {
     const theme = useTheme();
     const [isQuizVisible, setIsQuizVisible] = useState(false);
     const [winningHouse, setWinningHouse] = useState('Danshiri');
     const [isCgpaModalVisible, setIsCgpaModalVisible] = useState(false);
-    const [isGradesheetModalVisible, setIsGradesheetModalVisible] = useState(false); // 👈 New state for the gradesheet modal
+    const [isGradesheetModalVisible, setIsGradesheetModalVisible] = useState(false);
+    const [gradesheetData, setGradesheetData] = useState(null);
 
     const houseLogoMapping = {
         Danshiri: require('../assets/quiz_logo1.png'),
@@ -278,15 +264,36 @@ const ProfileScreen = () => {
         Meghdut: require('../assets/quiz_logo5.png'),
     };
     
+    const handleGradesheetScanComplete = (data) => {
+        if (data && data.semesters && data.semesters.length > 0) {
+            setGradesheetData(data);
+        }
+        setIsGradesheetModalVisible(false);
+    };
+
     const handleRetakeQuiz = () => {
         setWinningHouse(null);
         setIsQuizVisible(true);
     };
 
+    const activeSemesters = gradesheetData?.semesters || dummyGradesData;
+
+    const finalCgpa = gradesheetData?.semesters?.length > 0
+        ? gradesheetData.semesters[gradesheetData.semesters.length - 1].cumulativeCgpa
+        : '3.68';
+
+    const totalCompletedCredits = gradesheetData
+        ? gradesheetData.semesters.reduce((total, semester) => {
+            return total + semester.courses
+                .filter(course => !course.isNonCredit)
+                .reduce((sum, course) => sum + course.credits, 0);
+        }, 0)
+        : 21;
+
     const chartConfig = {
         backgroundGradientFrom: theme.colors.surface,
         backgroundGradientTo: theme.colors.surface,
-        color: (opacity = 1) => `rgba(80, 227, 194, ${opacity})`, // #50E3C2
+        color: (opacity = 1) => `rgba(80, 227, 194, ${opacity})`,
         strokeWidth: 2,
         barPercentage: 0.5,
         useShadowColorFromDataset: false,
@@ -294,34 +301,31 @@ const ProfileScreen = () => {
         decimalPlaces: 2,
     };
 
-    const gpaChartData = {
-        labels: dummyGradesData.map(data => data.semester.split(' ')[0]),
-        datasets: [
-            {
-                data: dummyGradesData.map(data => data.gpa),
-                color: (opacity = 1) => `rgba(80, 227, 194, ${opacity})`,
-                strokeWidth: 2
-            },
-        ],
-    };
-    
-    // Function to generate data for the semester bar chart
+    const gpaChartData = useMemo(() => ({
+        labels: activeSemesters.map(data => 
+            (data.name || data.semester).split(' ')[0].substring(0, 3)
+        ),
+        datasets: [{
+            data: activeSemesters.map(data => parseFloat(data.gpa)),
+            color: (opacity = 1) => `rgba(80, 227, 194, ${opacity})`,
+            strokeWidth: 2
+        }],
+    }), [activeSemesters]);
+
     const getSemesterChartData = (courses) => {
         return {
-            labels: courses.map(course => course.code),
-            datasets: [
-                {
-                    data: courses.map(course => course.points),
-                    colors: [
-                        (opacity = 1) => `rgba(80, 227, 194, ${opacity})`,
-                        (opacity = 1) => `rgba(255, 159, 64, ${opacity})`,
-                        (opacity = 1) => `rgba(75, 192, 192, ${opacity})`,
-                        (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
-                        (opacity = 1) => `rgba(153, 102, 255, ${opacity})`,
-                        (opacity = 1) => `rgba(255, 205, 86, ${opacity})`,
-                    ],
-                },
-            ],
+            labels: courses.map(course => course.courseCode || course.code),
+            datasets: [{
+                data: courses.map(course => parseFloat(course.gradePoints || course.points)),
+                colors: [
+                    (opacity = 1) => `rgba(80, 227, 194, ${opacity})`,
+                    (opacity = 1) => `rgba(255, 159, 64, ${opacity})`,
+                    (opacity = 1) => `rgba(75, 192, 192, ${opacity})`,
+                    (opacity = 1) => `rgba(255, 99, 132, ${opacity})`,
+                    (opacity = 1) => `rgba(153, 102, 255, ${opacity})`,
+                    (opacity = 1) => `rgba(255, 205, 86, ${opacity})`,
+                ],
+            }],
         };
     };
 
@@ -337,19 +341,23 @@ const ProfileScreen = () => {
 
             <ScrollView contentContainerStyle={styles.paddingContainer}>
                 
-                {/* 1. User Information */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
                     User Information
                 </Text>
                 <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface }]}>
                     <Card.Content>
-                        <Title style={{ color: theme.colors.onSurface }}>Moutmayen Nafis</Title>
-                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Student ID: 22201411</Paragraph>
-                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Major: Computer Science</Paragraph>
+                        <Title style={{ color: theme.colors.onSurface }}>
+                            {gradesheetData?.name || 'Moutmayen Nafis'}
+                        </Title>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
+                            Student ID: {gradesheetData?.studentId || '22201411'}
+                        </Paragraph>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
+                            Major: {gradesheetData?.program || 'Computer Science'}
+                        </Paragraph>
                     </Card.Content>
                 </Card>
 
-                {/* 2. Grades & Performance */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 10 }]}>
                     Grades & Performance
                 </Text>
@@ -358,70 +366,59 @@ const ProfileScreen = () => {
                     <Card.Content>
                         <View style={internalStyles.gradesSummaryContainer}>
                             <View style={internalStyles.summaryBox}>
-                                <Text style={[internalStyles.summaryValue, { color: theme.colors.primary }]}>{cumulativeCgpa}</Text>
+                                <Text style={[internalStyles.summaryValue, { color: theme.colors.primary }]}>{finalCgpa}</Text>
                                 <Text style={[internalStyles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>CGPA</Text>
                             </View>
                             <View style={internalStyles.summaryBox}>
-                                <Text style={[internalStyles.summaryValue, { color: theme.colors.primary }]}>{dummyGradesData.length}</Text>
+                                <Text style={[internalStyles.summaryValue, { color: theme.colors.primary }]}>{activeSemesters.length}</Text>
                                 <Text style={[internalStyles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>Semesters</Text>
                             </View>
                             <View style={internalStyles.summaryBox}>
-                                <Text style={[internalStyles.summaryValue, { color: theme.colors.primary }]}>{totalCredits}</Text>
+                                <Text style={[internalStyles.summaryValue, { color: theme.colors.primary }]}>{totalCompletedCredits}</Text>
                                 <Text style={[internalStyles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>Credits</Text>
                             </View>
                         </View>
                     </Card.Content>
                 </Card>
 
-                {/* GPA Trend Chart */}
                 <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface, marginBottom: 15 }]}>
                     <Card.Content>
                         <Title style={{ color: theme.colors.onSurface, marginBottom: 10 }}>GPA Trend</Title>
                         <LineChart
                             data={gpaChartData}
-                            width={screenWidth - 40} // -40 for padding
+                            width={screenWidth - 40}
                             height={220}
                             chartConfig={chartConfig}
                             bezier
-                            style={{
-                                marginVertical: 8,
-                                borderRadius: 16
-                            }}
+                            style={{ marginVertical: 8, borderRadius: 16 }}
                         />
                     </Card.Content>
                 </Card>
                 
-                {/* Semester-wise details */}
-                {dummyGradesData.map((semesterData, index) => (
+                {activeSemesters.map((semesterData, index) => (
                     <Card key={index} style={[styles.profileCard, { backgroundColor: theme.colors.surface, marginBottom: 15 }]}>
                         <Card.Content>
-                            <Title style={{ color: theme.colors.onSurface }}>{semesterData.semester}</Title>
-                            <Paragraph style={{ color: theme.colors.onSurfaceVariant, marginBottom: 10 }}>GPA: {semesterData.gpa.toFixed(2)}</Paragraph>
+                            <Title style={{ color: theme.colors.onSurface }}>
+                                {semesterData.name || semesterData.semester}
+                            </Title>
+                            <Paragraph style={{ color: theme.colors.onSurfaceVariant, marginBottom: 10 }}>
+                                GPA: {parseFloat(semesterData.gpa).toFixed(2)}
+                            </Paragraph>
                             
-                            {/* Bar Chart for grades */}
                             <BarChart
                                 data={getSemesterChartData(semesterData.courses)}
-                                width={screenWidth - 40} // -40 for padding
+                                width={screenWidth - 40}
                                 height={220}
-                                chartConfig={{
-                                    ...chartConfig,
-                                    barPercentage: 0.8,
-                                    labelColor: (opacity = 1) => theme.colors.onSurfaceVariant,
-                                }}
-                                style={{
-                                    marginVertical: 8,
-                                    borderRadius: 16
-                                }}
+                                chartConfig={{ ...chartConfig, barPercentage: 0.8 }}
+                                style={{ marginVertical: 8, borderRadius: 16 }}
                                 fromZero
                                 withInnerLines={true}
                                 showValuesOnTopOfBars={true}
                             />
-                            
                         </Card.Content>
                     </Card>
                 ))}
 
-                {/* 3. CGPA Calculator */}
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 10 }]}>
                     CGPA Calculator
                 </Text>
@@ -441,8 +438,7 @@ const ProfileScreen = () => {
                         </PaperButton>
                     </Card.Content>
                 </Card>
-                
-                {/* 4. Sorting Hat */}
+
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 10 }]}>
                     Sorting Hat
                 </Text>
@@ -489,7 +485,6 @@ const ProfileScreen = () => {
                 )}
             </ScrollView>
 
-            {/* Modals */}
             <QuizModal
                 visible={isQuizVisible}
                 onClose={() => setIsQuizVisible(false)}
@@ -502,12 +497,12 @@ const ProfileScreen = () => {
             <GradesheetScannerModal
                 visible={isGradesheetModalVisible}
                 onClose={() => setIsGradesheetModalVisible(false)}
+                onScanComplete={handleGradesheetScanComplete}
             />
         </View>
     );
 };
 
-// Internal styles to customize the layout
 const internalStyles = StyleSheet.create({
     houseInfoContainer: {
         alignItems: 'center',
@@ -545,7 +540,7 @@ const internalStyles = StyleSheet.create({
     courseListContainer: {
         marginTop: 15,
         borderTopWidth: 1,
-        borderTopColor: '#e0e0e0', // A light grey for the divider
+        borderTopColor: '#e0e0e0',
         paddingTop: 15,
     },
     courseRow: {
@@ -554,7 +549,7 @@ const internalStyles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0', // Lighter grey for course dividers
+        borderBottomColor: '#f0f0f0',
     },
     courseCode: {
         fontSize: 14,
@@ -564,7 +559,7 @@ const internalStyles = StyleSheet.create({
     courseName: {
         fontSize: 14,
         flex: 2,
-        flexShrink: 1, // Allow text to wrap if it's too long
+        flexShrink: 1,
     },
     courseGrade: {
         fontSize: 16,

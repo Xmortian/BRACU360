@@ -776,10 +776,10 @@ const AdditionalScreen = () => {
 
             <View style={localStyles.quoteContainer}>
               <Text style={localStyles.quoteText}>
-                "The most powerful weapon on earth is the human soul on fire."
+                Non est ad astra mollis e terris via -     "There is no easy way from the earth to the stars."
               </Text>
               <Text style={localStyles.quoteAuthor}>
-                — General Ferdinand Foch
+                — Seneca
               </Text>
             </View>
           </ScrollView>

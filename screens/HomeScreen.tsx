@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, Image, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import styles from '../styles/styles';
 import ImageViewer from 'react-native-image-zoom-viewer';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { Trash2 } from 'lucide-react-native';
+import { Trash2, ChevronLeft, ChevronRight, Bell, MapPin, User, PlusCircle, Image as ImageIcon, QrCode } from 'lucide-react-native';
 
 import OcrScannerModal from './OcrScanner';
-import {
-    ChevronLeft,
-    ChevronRight,
-    BookText,
-    ClipboardList,
-    Bell,
-    MapPin,
-    User,
-    PlusCircle,
-    Image as ImageIcon,
-} from 'lucide-react-native';
+import ShareRoutineModal from './ShareRoutineModal'; // New component import
+import styles from '../styles/styles';
 
+const { width, height } = Dimensions.get('window');
 const imageDir = FileSystem.documentDirectory + 'user_images/';
+
+// New component for full-screen GIF display
+const NoRoutineOrRestDayGif = ({ gifSource, isRestDay }) => (
+    <View style={localStyles.gifContainer}>
+        <Image
+            source={gifSource}
+            style={localStyles.gifImage}
+        />
+        {isRestDay && (
+            <Text style={localStyles.restDayText}>
+                Rest Day
+            </Text>
+        )}
+    </View>
+);
 
 function ImageUploaderModal({ visible, onClose }) {
     const [images, setImages] = useState([]);
@@ -163,34 +167,6 @@ function ImageUploaderModal({ visible, onClose }) {
     );
 }
 
-function RoutineOverviewModal({ visible, onClose }) {
-    const theme = useTheme();
-    const routineOverviewContent = ` ADD Your Routine `;
-
-    return (
-        <Modal
-            visible={visible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={onClose}
-        >
-            <View style={styles.modalOverlay}>
-                <View style={[styles.modalContainer, { backgroundColor: theme.colors.surface }]}>
-                    <View style={styles.modalHeader}>
-                        <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Routine Overview</Text>
-                        <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>Close</PaperButton>
-                    </View>
-                    <ScrollView style={styles.modalContentScroll}>
-                        <Text style={[styles.yearPlannerText, { color: theme.colors.onSurfaceVariant }]}>
-                            {routineOverviewContent}
-                        </Text>
-                    </ScrollView>
-                </View>
-            </View>
-        </Modal>
-    );
-}
-
 const convert24to12hr = (time) => {
     if (!time) return 'N/A';
     let [hours, minutes] = time.split(/[^0-9]/).filter(Boolean);
@@ -208,13 +184,14 @@ const HomeScreen = () => {
     const theme = useTheme();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
-    const [isRoutineOverviewVisible, setIsRoutineOverviewVisible] = useState(false);
     const [isOcrModalVisible, setIsOcrModalVisible] = useState(false);
+    const [isShareModalVisible, setIsShareModalVisible] = useState(false); // New state for QR code modal
     const [scheduleData, setScheduleData] = useState([]);
     const [dailyRoutine, setDailyRoutine] = useState([]);
+    const [gifPath, setGifPath] = useState(null);
+    const [isRestDay, setIsRestDay] = useState(false);
 
     const dayMap = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-    
     const colors = ['#A7F3D0', '#FDE68A', '#BFDBFE', '#D1FAE5'];
     
     const getClassColor = (index) => {
@@ -235,7 +212,7 @@ const HomeScreen = () => {
                 t.schedules === item.schedules
             ))
         );
-
+        
         const sortedClasses = uniqueClasses.sort((a, b) => {
             const getStartTime = (scheduleString) => {
                 if (!scheduleString) return '00:00';
@@ -250,6 +227,25 @@ const HomeScreen = () => {
         });
         
         setDailyRoutine(sortedClasses);
+
+        // Logic to show GIF based on routine status, using require()
+        if (scheduleData.length === 0) {
+            setGifPath(require('../assets/upload routine.gif'));
+            setIsRestDay(false);
+        } else if (sortedClasses.length === 0) {
+            const restGifs = [
+                require('../assets/rest.gif'),
+                require('../assets/rest2.gif'),
+                require('../assets/rest3.gif'),
+                require('../assets/rest4.gif'),
+            ];
+            const randomGif = restGifs[Math.floor(Math.random() * restGifs.length)];
+            setGifPath(randomGif);
+            setIsRestDay(true);
+        } else {
+            setGifPath(null); // No GIF if there's a routine
+            setIsRestDay(false);
+        }
     }, [selectedDate, scheduleData]);
 
     const handleScheduleFound = (data) => {
@@ -312,8 +308,8 @@ const HomeScreen = () => {
                     onPress={() => setIsImageViewerVisible(true)}
                 />
                 <Appbar.Action
-                    icon={() => <ClipboardList size={24} color={theme.colors.onPrimary} />}
-                    onPress={() => setIsRoutineOverviewVisible(true)}
+                    icon={() => <QrCode size={24} color={theme.colors.onPrimary} />}
+                    onPress={() => setIsShareModalVisible(true)}
                 />
                 <Appbar.Content title="Schedule" titleStyle={styles.appBarTitle} />
                 <Appbar.Action
@@ -344,67 +340,72 @@ const HomeScreen = () => {
                 </View>
             </ScrollView>
             
-            <FlatList
-                data={dailyRoutine}
-                keyExtractor={(item, index) => `${item.courseName}-${item.section}-${index}`}
-                contentContainerStyle={styles.paddingContainer}
-                renderItem={({ item, index }) => {
-                    const dailySchedule = item.schedules.split(' / ').find(schedule => 
-                        schedule.startsWith(dayMap[selectedDate.getDay()].substring(0, 3))
-                    );
-                    
-                    let startTime = 'N/A';
-                    let endTime = 'N/A';
-                    if (dailySchedule) {
-                        const timeRange = dailySchedule.split(': ')[1];
-                        [startTime, endTime] = timeRange.split('-');
-                    }
-                    const cardColor = getClassColor(index);
+            {gifPath ? (
+                <NoRoutineOrRestDayGif gifSource={gifPath} isRestDay={isRestDay} />
+            ) : (
+                <FlatList
+                    data={dailyRoutine}
+                    keyExtractor={(item, index) => `${item.courseName}-${item.section}-${index}`}
+                    contentContainerStyle={styles.paddingContainer}
+                    renderItem={({ item, index }) => {
+                        const dailySchedule = item.schedules.split(' / ').find(schedule => 
+                            schedule.startsWith(dayMap[selectedDate.getDay()].substring(0, 3))
+                        );
+                        
+                        let startTime = 'N/A';
+                        let endTime = 'N/A';
+                        if (dailySchedule) {
+                            const timeRange = dailySchedule.split(': ')[1];
+                            [startTime, endTime] = timeRange.split('-');
+                        }
+                        const cardColor = getClassColor(index);
 
-                    return (
-                        <Card key={index} style={[styles.classCard, { backgroundColor: cardColor }]}>
-                            <View style={styles.classCardContent}>
-                                <View style={styles.classCardTime}>
-                                    <Text style={styles.classTimeText}>{convert24to12hr(startTime)}</Text>
-                                    <Text style={styles.classTimeText}>{convert24to12hr(endTime)}</Text>
-                                </View>
-                                <View style={styles.classCardDetails}>
-                                    <Title style={styles.classCourseTitle}>{item.courseName} - {item.section}</Title>
-                                    <View style={styles.classInfoRow}>
-                                        <MapPin size={16} color="#444" />
-                                        <Text style={styles.classInfoText}>{item.room}</Text>
+                        return (
+                            <Card key={index} style={[styles.classCard, { backgroundColor: cardColor }]}>
+                                <View style={styles.classCardContent}>
+                                    <View style={styles.classCardTime}>
+                                        <Text style={styles.classTimeText}>{convert24to12hr(startTime)}</Text>
+                                        <Text style={styles.classTimeText}>{convert24to12hr(endTime)}</Text>
                                     </View>
-                                    <View style={styles.classInfoRow}>
-                                        <User size={16} color="#444" />
-                                        <Text style={styles.classInfoText}>{item.faculty}</Text>
+                                    <View style={styles.classCardDetails}>
+                                        <Title style={styles.classCourseTitle}>{item.courseName} - {item.section}</Title>
+                                        <View style={styles.classInfoRow}>
+                                            <MapPin size={16} color="#444" />
+                                            <Text style={styles.classInfoText}>{item.room}</Text>
+                                        </View>
+                                        <View style={styles.classInfoRow}>
+                                            <User size={16} color="#444" />
+                                            <Text style={styles.classInfoText}>{item.faculty}</Text>
+                                        </View>
                                     </View>
+                                    <TouchableOpacity style={styles.classBellIcon}>
+                                        <Bell size={20} color="#666" />
+                                    </TouchableOpacity>
                                 </View>
-                                <TouchableOpacity style={styles.classBellIcon}>
-                                    <Bell size={20} color="#666" />
-                                </TouchableOpacity>
-                            </View>
-                        </Card>
-                    );
-                }}
-                ListEmptyComponent={() => (
-                    <Text style={[styles.noClassesText, {color: theme.colors.onSurfaceVariant}]}>
-                        Rest Day.
-                    </Text>
-                )}
-            />
+                            </Card>
+                        );
+                    }}
+                    ListEmptyComponent={() => (
+                        <Text style={[styles.noClassesText, {color: theme.colors.onSurfaceVariant}]}>
+                            Rest Day.
+                        </Text>
+                    )}
+                />
+            )}
 
             <ImageUploaderModal
                 visible={isImageViewerVisible}
                 onClose={() => setIsImageViewerVisible(false)}
             />
-            <RoutineOverviewModal
-                visible={isRoutineOverviewVisible}
-                onClose={() => setIsRoutineOverviewVisible(false)}
-            />
             <OcrScannerModal
                 visible={isOcrModalVisible}
                 onClose={() => setIsOcrModalVisible(false)}
                 onScheduleFound={handleScheduleFound}
+            />
+            <ShareRoutineModal
+                visible={isShareModalVisible}
+                onClose={() => setIsShareModalVisible(false)}
+                scheduleData={scheduleData}
             />
         </View>
     );
@@ -480,6 +481,30 @@ const localStyles = StyleSheet.create({
         borderRadius: 12,
         padding: 3,
         zIndex: 10,
+    },
+    gifContainer: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingTop: Dimensions.get('window').height * 0.09,
+    },
+    gifImage: {
+        width: Dimensions.get('window').width,
+        height: Dimensions.get('window').height / 2.5,
+        resizeMode: 'cover',
+        borderRadius: 20,
+        borderWidth: 5,
+        borderColor: '#50E3C2',
+    },
+    restDayText: {
+        position: 'absolute',
+        bottom: '18%',
+        color: 'white', // Changed to white for better visibility on the GIF
+        fontSize: 28,
+        fontWeight: 'bold',
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 2, height: 2 },
+        textShadowRadius: 5,
     },
 });
 
