@@ -6,10 +6,10 @@ import {
 import {
   Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme, TextInput
 } from 'react-native-paper';
-import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, Trash, Check, X } from 'lucide-react-native';
+import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, Plus, Trash, Check, X } from 'lucide-react-native';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import DateTimePicker from '@react-native-community/datetimepicker'; 
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as FileSystem from 'expo-file-system';
@@ -52,7 +52,7 @@ const savePhotoForCourseAsync = async (tempUri, courseName) => {
     }
   }
 
-  return newPath; 
+  return newPath;
 };
 
 const listCoursePhotosAsync = async (courseName) => {
@@ -96,7 +96,7 @@ const CustomAlertModal = ({ visible, onClose, title, message }) => {
             style={[styles.modalButton, { backgroundColor: theme.colors.error }]}
             labelStyle={[styles.modalButtonLabel, { color: theme.colors.onError }]}
           >
-            <Text>OK</Text>
+            OK
           </PaperButton>
         </View>
       </View>
@@ -194,7 +194,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add New Deadline</Text>
             <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>
-              <Text>Close</Text>
+              Close
             </PaperButton>
           </View>
 
@@ -271,7 +271,7 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
           </ScrollView>
 
           <PaperButton mode="contained" onPress={handleSave} style={{ marginTop: 20, backgroundColor: theme.colors.primary }} labelStyle={{ color: theme.colors.onPrimary }}>
-            <Text>Save Deadline</Text>
+            Save Deadline
           </PaperButton>
         </View>
       </View>
@@ -287,19 +287,27 @@ const DeadlineModal = ({ visible, onClose, courseId, onAddDeadline }) => {
 const CameraModal = ({ visible, onClose, onCapture }) => {
   const cameraRef = useRef(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
   const [flash, setFlash] = useState('off');
   const [zoom, setZoom] = useState(0);
+  const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     if (!permission) requestPermission();
-  }, [permission]);
+    if (!mediaPermission) requestMediaPermission();
+  }, [permission, mediaPermission]);
 
   const takePicture = async () => {
     try {
       if (cameraRef.current) {
+        if (!mediaPermission?.granted) {
+          Alert.alert("Permission Required", "To save photos to your device gallery, please grant media library permissions.");
+          return;
+        }
+
         const photo = await cameraRef.current.takePictureAsync();
         onCapture?.(photo.uri);
-        onClose?.();
+        setPhotoCount(prevCount => prevCount + 1);
       }
     } catch (e) {
       Alert.alert('Camera Error', e?.message ?? 'Failed to take picture');
@@ -307,8 +315,9 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
   };
 
   const pinchGesture = Gesture.Pinch()
-    .onUpdate((e) => {
-      let next = zoom + (e.scale - 1) * 0.06;
+    .onUpdate((event) => {
+      const newZoom = event.scale - 1;
+      let next = zoom + newZoom * 0.1;
       next = Math.max(0, Math.min(1, next));
       setZoom(next);
     });
@@ -337,13 +346,19 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
         </GestureDetector>
 
         <View style={cameraStyles.topBar}>
-          <TouchableOpacity onPress={onClose} style={cameraStyles.iconButton}>
-            <Ionicons name="close" size={28} color="white" />
+          <TouchableOpacity onPress={onClose} style={[cameraStyles.iconButton, { backgroundColor: 'green', position: 'absolute', right: 16 }]}>
+            <Ionicons name="checkmark" size={28} color="white" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setFlash(flash === 'off' ? 'on' : 'off')} style={cameraStyles.iconButton}>
             <Ionicons name={flash === 'off' ? 'flash-off' : 'flash'} size={24} color="white" />
           </TouchableOpacity>
         </View>
+        
+        {photoCount > 0 && (
+            <View style={{ position: 'absolute', top: 50, right: 100, backgroundColor: 'rgba(0,0,0,0.5)', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20 }}>
+                <Text style={{ color: 'white', fontSize: 16 }}>{photoCount} photo(s) taken</Text>
+            </View>
+        )}
 
         <View style={cameraStyles.bottomBar}>
           <TouchableOpacity onPress={() => setZoom((z) => Math.max(0, +(z - 0.1).toFixed(3)))} style={cameraStyles.iconButton}>
@@ -412,11 +427,22 @@ const NotesModal = ({ visible, onClose, courseName, onDeleteLocal }) => {
       <Appbar.Header style={[styles.appBar, { backgroundColor: theme.colors.primary }]}>
         <Appbar.Content title={`${courseName || 'Course'} Notes`} titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
         <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.onPrimary }}>
-          <Text>Close</Text>
+          Close
         </PaperButton>
       </Appbar.Header>
 
-      {images.length === 0 ? (
+      {/* Conditionally render FlatList or ImageViewing */}
+      {viewerVisible ? (
+        <ImageViewing
+          images={images.map((u) => ({ uri: u }))}
+          imageIndex={currentIndex}
+          visible={viewerVisible}
+          onRequestClose={() => setViewerVisible(false)}
+          doubleTapToZoomEnabled={true}
+          swipeToCloseEnabled={true}
+          onImageIndexChange={(index) => setCurrentIndex(index)}
+        />
+      ) : images.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <Text style={{ color: theme.colors.onSurfaceVariant }}>No notes saved for this course yet.</Text>
         </View>
@@ -428,13 +454,6 @@ const NotesModal = ({ visible, onClose, courseName, onDeleteLocal }) => {
           contentContainerStyle={{ padding: 10 }}
         />
       )}
-
-      <ImageViewing
-        images={images.map((u) => ({ uri: u }))}
-        imageIndex={currentIndex}
-        visible={viewerVisible}
-        onRequestClose={() => setViewerVisible(false)}
-      />
     </Modal>
   );
 };
@@ -528,7 +547,7 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Add General Deadline</Text>
             <PaperButton icon="close" onPress={onClose} mode="text" labelStyle={{ color: theme.colors.primary }}>
-              <Text>Close</Text>
+              Close
             </PaperButton>
           </View>
 
@@ -601,7 +620,7 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
           </ScrollView>
 
           <PaperButton mode="contained" onPress={handleSave} style={{ marginTop: 20, backgroundColor: theme.colors.primary }} labelStyle={{ color: theme.colors.onPrimary }}>
-            <Text>Save Deadline</Text>
+            Save Deadline
           </PaperButton>
         </View>
       </View>
@@ -614,36 +633,64 @@ const GeneralDeadlineModal = ({ visible, onClose, onAddDeadline }) => {
 // ----------------------
 // Main Screen
 // ----------------------
-const CoursesScreen = () => {
+const CoursesScreen = ({ route }) => {
   const theme = useTheme();
   const [isDeadlineModalVisible, setIsDeadlineModalVisible] = useState(false);
   const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [isNotesModalVisible, setIsNotesModalVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
-
   const [allSemestersData, setAllSemestersData] = useState({
-    'Summer 2025': [
-      { id: '1', courseName: 'Programming Language I', notes: [], deadlines: [{ id: 'd1', name: 'Assignment 2', date: '2025-09-08T18:00:00.000Z', reminderDays: 2 }] },
-      { id: '2', courseName: 'Introduction to Psychology', notes: [], deadlines: [] },
-      { id: '3', courseName: 'Discrete Mathematics', notes: [], deadlines: [{ id: 'd2', name: 'Quiz 3', date: '2025-09-17T12:00:00.000Z', reminderDays: 7 }] },
-      { id: '4', courseName: 'Object-Oriented Programming', notes: [], deadlines: [] },
-    ],
-    'Spring 2025': [
-      { id: '5', courseName: 'Data Structures', notes: [], deadlines: [] },
-      { id: '6', courseName: 'Algorithm Design', notes: [], deadlines: [] },
-    ],
-    'Fall 2024': [
-      { id: '7', courseName: 'Intro to Robotics', notes: [], deadlines: [] },
+    'Dummy Semester': [
+      { id: '1', courseName: 'Dummy Course 1', notes: [], deadlines: [] },
     ],
   });
-  const [selectedSemester, setSelectedSemester] = useState('Summer 2025');
+  const [selectedSemester, setSelectedSemester] = useState('Dummy Semester');
   const [isSemesterDropdownVisible, setIsSemesterDropdownVisible] = useState(false);
-
-  const courses = allSemestersData[selectedSemester] || [];
-  
   const [generalDeadlines, setGeneralDeadlines] = useState([]);
   const [isGeneralDeadlineModalVisible, setIsGeneralDeadlineModalVisible] = useState(false);
 
+  // New function to process and merge courses
+  const processCourses = (data) => {
+    const uniqueCoursesMap = new Map();
+
+    data.forEach(course => {
+      const courseCodeWithoutL = course.courseName.toUpperCase().replace(/L$/, '');
+      const courseId = courseCodeWithoutL + course.section;
+
+      if (uniqueCoursesMap.has(courseId)) {
+        // If the course already exists, merge it.
+        // For simplicity, we'll keep the first one found but ensure the courseName is without 'L'
+        const existingCourse = uniqueCoursesMap.get(courseId);
+        existingCourse.courseName = courseCodeWithoutL;
+      } else {
+        // Add the new course, with the name simplified if needed
+        const newCourse = {
+          id: courseId,
+          courseName: courseCodeWithoutL,
+          notes: [],
+          deadlines: [],
+        };
+        uniqueCoursesMap.set(courseId, newCourse);
+      }
+    });
+
+    return Array.from(uniqueCoursesMap.values());
+  };
+
+  useEffect(() => {
+    if (route.params?.scheduleData) {
+      const processedCourses = processCourses(route.params.scheduleData);
+
+      setAllSemestersData(prevData => ({
+        ...prevData,
+        'Current Semester': processedCourses,
+      }));
+      setSelectedSemester('Current Semester');
+    }
+  }, [route.params?.scheduleData]);
+
+  const courses = allSemestersData[selectedSemester] || [];
+  
   const handleAddGeneralDeadline = (deadlineData) => {
     setGeneralDeadlines((prev) => [...prev, deadlineData]);
   };
@@ -676,7 +723,7 @@ const CoursesScreen = () => {
       ...prev,
       [selectedSemester]: prev[selectedSemester].map((c) => (
         c.id === selectedCourse.id ? { ...c, notes: c.notes.filter((u) => u !== uri) } : c
-      ))
+      )),
     }));
   };
 
@@ -770,9 +817,17 @@ const CoursesScreen = () => {
             <View key={deadline.id} style={{ marginBottom: 15 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 10 }}>
-                  <Text style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold', textDecorationLine: deadline.status === 'Done' ? 'line-through' : 'none' }}>
-                    {deadline.name}
-                  </Text>
+                  <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text
+                      style={{
+                        color: theme.colors.onSurfaceVariant,
+                        fontWeight: 'bold',
+                        textDecorationLine: deadline.status === 'Done' ? 'line-through' : 'none',
+                      }}
+                    >
+                      {deadline.name}
+                    </Text>
+                  </ScrollView>
                   {deadline.status !== 'Done' && (
                     <Text style={{ color: calculateTimeLeft(deadline.date) === 'Passed' ? theme.colors.error : theme.colors.primary, marginLeft: 10, textDecorationLine: 'none' }}>
                       {calculateTimeLeft(deadline.date)}
@@ -845,32 +900,61 @@ const CoursesScreen = () => {
             <View style={[styles.sectionHeader, { marginTop: 20 }]}>
               <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>General Deadlines</Text>
               <TouchableOpacity onPress={() => setIsGeneralDeadlineModalVisible(true)}>
-                <Text style={[styles.addButton, { color: theme.colors.primary }]}>+ Add</Text>
+                <Plus size={24} color={theme.colors.primary} />
               </TouchableOpacity>
             </View>
 
             {generalDeadlines.length > 0 ? (
-              <FlatList
-                data={generalDeadlines}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View style={[styles.deadlineItem, { backgroundColor: theme.colors.surface, marginBottom: 10 }]}>
-                    <View>
-                      <Paragraph style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>{item.name}</Paragraph>
-                      <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>{new Date(item.date).toDateString()}</Paragraph>
+              <Card style={[styles.courseCard, { backgroundColor: theme.colors.surface, marginBottom: 10, borderRadius: 12 }]}>
+                <Card.Content>
+                  {generalDeadlines.map((deadline) => (
+                    <View key={deadline.id} style={{ marginBottom: 15 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 10 }}>
+                          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text
+                              style={{
+                                color: theme.colors.onSurfaceVariant,
+                                fontWeight: 'bold',
+                                textDecorationLine: deadline.status === 'Done' ? 'line-through' : 'none',
+                              }}
+                            >
+                              {deadline.name}
+                            </Text>
+                          </ScrollView>
+                          {deadline.status !== 'Done' && (
+                            <Text style={{ color: calculateTimeLeft(deadline.date) === 'Passed' ? theme.colors.error : theme.colors.primary, marginLeft: 10, textDecorationLine: 'none' }}>
+                              {calculateTimeLeft(deadline.date)}
+                            </Text>
+                          )}
+                        </View>
+                        <Text style={{ color: theme.colors.onSurfaceVariant, textDecorationLine: 'none' }}>
+                          {new Date(deadline.date).toLocaleDateString()} {new Date(deadline.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
+                        {deadline.status !== 'Done' && (
+                          <TouchableOpacity onPress={() => setGeneralDeadlines(prev => prev.map(d => d.id === deadline.id ? { ...d, status: 'Done' } : d))} style={{ marginRight: 15 }}>
+                            <Check size={24} color={theme.colors.primary} />
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={() => handleDeleteGeneralDeadline(deadline.id)}>
+                          <X size={24} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <TouchableOpacity onPress={() => handleDeleteGeneralDeadline(item.id)}>
-                      <Trash size={24} color={theme.colors.error} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-                scrollEnabled={false}
-              />
+                  ))}
+                </Card.Content>
+              </Card>
             ) : (
-              <Text style={{ color: theme.colors.onSurfaceVariant, marginBottom: 20 }}>No general deadlines added.</Text>
+              <Card style={[styles.courseCard, { backgroundColor: theme.colors.surface, marginBottom: 10, borderRadius: 12 }]}>
+                <Card.Content>
+                  <Text style={{ color: theme.colors.onSurfaceVariant }}>No general deadlines added.</Text>
+                </Card.Content>
+              </Card>
             )}
 
-            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>My Courses</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>My Courses</Text>
           </View>
         )}
       />

@@ -347,10 +347,10 @@ const ProfileScreen = () => {
                 <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface }]}>
                     <Card.Content>
                         <Title style={{ color: theme.colors.onSurface }}>
-                            {gradesheetData?.name || 'Moutmayen Nafis'}
+                            {gradesheetData?.name || 'Dummy User'}
                         </Title>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
-                            Student ID: {gradesheetData?.studentId || '22201411'}
+                            Student ID: {gradesheetData?.studentId || '22222222'}
                         </Paragraph>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
                             Major: {gradesheetData?.program || 'Computer Science'}
@@ -443,14 +443,16 @@ const ProfileScreen = () => {
                     Sorting Hat
                 </Text>
                 {!winningHouse ? (
-                    <View style={styles.quizButtonContainer}>
-                        <Image source={houseLogoMapping['Danshiri']} style={styles.floatingLogo} />
-                        <Image source={houseLogoMapping['Chayaneer']} style={styles.floatingLogo} />
-                        <Image source={houseLogoMapping['Moyurpankhi']} style={styles.floatingLogo} />
-                        <Image source={houseLogoMapping['Drubotara']} style={styles.floatingLogo} />
-                        <Image source={houseLogoMapping['Meghdut']} style={styles.floatingLogo} />
+                    <View style={internalStyles.quizContainer}>
+                        <View style={internalStyles.logoContainer}>
+                            <Image source={houseLogoMapping['Danshiri']} style={internalStyles.floatingLogo} />
+                            <Image source={houseLogoMapping['Chayaneer']} style={internalStyles.floatingLogo} />
+                            <Image source={houseLogoMapping['Moyurpankhi']} style={internalStyles.floatingLogo} />
+                            <Image source={houseLogoMapping['Drubotara']} style={internalStyles.floatingLogo} />
+                            <Image source={houseLogoMapping['Meghdut']} style={internalStyles.floatingLogo} />
+                        </View>
                         <TouchableOpacity
-                            style={[styles.quizButton, { backgroundColor: '#423f66' }]}
+                            style={[styles.quizButton, { backgroundColor: '#423f66', marginTop: 20 }]}
                             onPress={() => setIsQuizVisible(true)}
                         >
                             <Text style={styles.quizButtonText}>
@@ -566,6 +568,23 @@ const internalStyles = StyleSheet.create({
         fontWeight: 'bold',
         flex: 0.5,
         textAlign: 'right',
+    },
+    quizButtonContainer: {
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    logoContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        marginBottom: 20,
+    },
+    floatingLogo: {
+        width: 45,
+        height: 45,
+        borderRadius: 22.5,
+        resizeMode: 'contain',
+        marginHorizontal: 5,
     },
 });
 

@@ -21,9 +21,6 @@ const ShareRoutineModal = ({ visible, onClose, scheduleData }) => {
             </Modal>
         );
     }
-
-    // Fix for the "data too big" error: simplify the data before encoding.
-    // We only need the courseName and section to retrieve the full routine later.
     const simplifiedData = scheduleData.map(item => ({
         courseName: item.courseName,
         section: item.section

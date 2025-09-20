@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Modal, StatusBar, ActivityIndicator, Alert, Image, Dimensions, StyleSheet, TextInput } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
-import { ChevronLeft, ScanText } from 'lucide-react-native';
+import { ChevronLeft, ScanText, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import styles from '../styles/styles';
@@ -13,8 +13,10 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
     const [imageUri, setImageUri] = useState(null);
     const [rawText, setRawText] = useState(null);
     const [loading, setLoading] = useState(false);
-    
-    // scheduleData state is no longer managed here
+    const [activeTab, setActiveTab] = useState('upload'); // 'upload' or 'manual'
+    const [courseCode, setCourseCode] = useState('');
+    const [sectionName, setSectionName] = useState('');
+    const [manualCourses, setManualCourses] = useState([]);
 
     useEffect(() => {
         (async () => {
@@ -112,45 +114,40 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
         return routine;
     };
 
-    const performOcr = async (uri) => {
+    const fetchScheduleAndSave = async (coursesToFetch) => {
         setLoading(true);
-        setRawText(null);
-        // Do not reset scheduleData here
-        
         try {
-            const textResult = await TextRecognition.recognize(uri);
-            const fullText = textResult.text;
-            setRawText(fullText);
-
-            const parsedSchedule = parseFullSchedule(textResult.blocks);
-            const flatSchedule = Object.entries(parsedSchedule).flatMap(([day, times]) =>
-                Object.entries(times).map(([time, courseInfo]) => ({
-                    day,
-                    time,
-                    courseInfo,
-                }))
-            );
-
             const response = await fetch('https://usis-cdn.eniamza.com/connect.json');
             if (!response.ok) {
                 throw new Error('Failed to fetch live data from server.');
             }
-            const liveData = await response.json();
-            const courseRoutines = liveData;
+            // The response is now a direct array of course objects
+            const courseRoutines = await response.json();
+            
+            // Get the semesterSessionId from the first course object in the array
+            const semesterSessionId = courseRoutines[0]?.semesterSessionId;
+            let currentSemester = 'N/A';
+
+            if (semesterSessionId) {
+              const year = Math.floor(semesterSessionId / 10);
+              const semesterCode = semesterSessionId % 10;
+              const semesterName = semesterCode === 1 ? "Spring" : semesterCode === 2 ? "Summer" : "Fall";
+              currentSemester = `${semesterName} ${year}`;
+            }
 
             let finalSchedule = [];
 
-            flatSchedule.forEach(item => {
-                if (item.courseInfo && item.courseInfo.courseCode && item.courseInfo.sectionName) {
+            coursesToFetch.forEach(item => {
+                if (item.courseCode && item.sectionName) {
                     const matchedCourse = courseRoutines.find(
                         (liveItem) =>
-                            liveItem.courseCode?.toUpperCase() === item.courseInfo.courseCode.toUpperCase() &&
-                            liveItem.sectionName === item.courseInfo.sectionName
+                            liveItem.courseCode?.toUpperCase() === item.courseCode.toUpperCase() &&
+                            liveItem.sectionName === item.sectionName
                     );
 
                     if (matchedCourse) {
                         const theorySchedules = matchedCourse.sectionSchedule?.classSchedules || [];
-                        const theorySchedulesFormatted = theorySchedules.map(schedule => 
+                        const theorySchedulesFormatted = theorySchedules.map(schedule =>
                             `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
                         ).join(' / ');
 
@@ -162,16 +159,14 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                             schedules: theorySchedulesFormatted,
                             finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
                             midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
-                            
-                            // To display on the home screen
                             classTimes: matchedCourse.sectionSchedule?.classSchedules || [],
+                            semester: currentSemester,
                         });
-
+                        
                         if (matchedCourse.labSchedules && matchedCourse.labSchedules.length > 0) {
                             const labSchedulesFormatted = matchedCourse.labSchedules.map(schedule => 
                                 `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
                             ).join(' / ');
-
                             finalSchedule.push({
                                 courseName: matchedCourse.labCourseCode,
                                 section: matchedCourse.sectionName,
@@ -180,20 +175,38 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                                 schedules: labSchedulesFormatted,
                                 finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
                                 midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
-
-                                // To display on the home screen
                                 classTimes: matchedCourse.labSchedules || [],
+                                semester: currentSemester,
                             });
                         }
                     }
                 }
             });
 
-            // Pass the data back to the parent component
             onScheduleFound(finalSchedule);
             Alert.alert("Success", "Routine uploaded and saved!");
             onClose();
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const performOcr = async (uri) => {
+        setLoading(true);
+        setRawText(null);
+        try {
+            const textResult = await TextRecognition.recognize(uri);
+            const fullText = textResult.text;
+            setRawText(fullText);
+
+            const parsedSchedule = parseFullSchedule(textResult.blocks);
+            const coursesToFetch = Object.entries(parsedSchedule).flatMap(([day, times]) =>
+                Object.values(times).filter(courseInfo => courseInfo !== "XXXX")
+            );
+            await fetchScheduleAndSave(coursesToFetch);
         } catch (error) {
             console.error('Error in OCR or data fetching:', error);
             Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
@@ -201,7 +214,25 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
             setLoading(false);
         }
     };
-    
+
+    const handleAddCourse = () => {
+        if (courseCode.trim() && sectionName.trim()) {
+            setManualCourses([...manualCourses, { courseCode: courseCode.toUpperCase().trim(), sectionName: sectionName.trim() }]);
+            setCourseCode('');
+            setSectionName('');
+        } else {
+            Alert.alert('Invalid Input', 'Please enter both a Course Code and a Section.');
+        }
+    };
+
+    const handleSaveManual = () => {
+        if (manualCourses.length > 0) {
+            fetchScheduleAndSave(manualCourses);
+        } else {
+            Alert.alert('No Courses Added', 'Please add at least one course before saving.');
+        }
+    };
+
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
             <View style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
@@ -211,74 +242,131 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                         icon={() => <ChevronLeft size={24} color={theme.colors.onPrimary} />}
                         onPress={onClose}
                     />
-                    <Appbar.Content title="OCR Routine" titleStyle={styles.appBarTitle} />
+                    <Appbar.Content title="Routine" titleStyle={styles.appBarTitle} />
                 </Appbar.Header>
 
                 <ScrollView contentContainerStyle={styles.paddingContainer}>
+                    <View style={localStyles.tabContainer}>
+                        <PaperButton
+                            mode={activeTab === 'upload' ? 'contained' : 'outlined'}
+                            onPress={() => setActiveTab('upload')}
+                            style={{ flex: 1, marginRight: 5, borderColor: theme.colors.primary }}
+                            labelStyle={{ color: activeTab === 'upload' ? theme.colors.onPrimary : theme.colors.primary }}
+                        >
+                            <Text>Upload</Text>
+                        </PaperButton>
+                        <PaperButton
+                            mode={activeTab === 'manual' ? 'contained' : 'outlined'}
+                            onPress={() => setActiveTab('manual')}
+                            style={{ flex: 1, marginLeft: 5, borderColor: theme.colors.primary }}
+                            labelStyle={{ color: activeTab === 'manual' ? theme.colors.onPrimary : theme.colors.primary }}
+                        >
+                            <Text>Manual</Text>
+                        </PaperButton>
+                    </View>
+                    
                     <Text style={localStyles.warningText}>
                         <Text style={{fontWeight: 'bold'}}>Warning: </Text>
-                        The routine data relies on CONNECT's database. Errors may occur near the end of a semester before the new data is renewed. For best results, please upload your routine after a new semester begins.
+                        Try to avoid uploading routine at the near end of the semester, after connect database has been synced with the next semester's routine.
                     </Text>
-                    
-                    <Card style={[styles.mainCard, { marginBottom: 20 }]}>
-                        <Card.Content style={{ alignItems: 'center', backgroundColor: '#000000', borderRadius: 10 }}>
-                            <Image
-                                source={require('../assets/routine.gif')}
-                                style={{ width: '100%', height: 200, resizeMode: 'contain', marginBottom: 10 }}
-                            />
-                            <Title style={[styles.cardTitle, { color: '#ffffff' }]}>
-                                Class Routine Upload
-                            </Title>
-                            <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                                Log in to Connect.
-                            </Paragraph>
-                            <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                                Take a screenshot of class routine.
-                            </Paragraph>
-                            <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
-                                Upload the screenshot!
-                            </Paragraph>
-                        </Card.Content>
-                    </Card>
 
-                    <Card style={styles.mainCard}>
-                        <Card.Content>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+                    {activeTab === 'upload' ? (
+                        <View>
+                            <Card style={[styles.mainCard, { marginBottom: 20 }]}>
+                                <Card.Content style={{ alignItems: 'center', backgroundColor: '#000000', borderRadius: 10 }}>
+                                    <Image
+                                        source={require('../assets/routine.gif')}
+                                        style={{ width: '100%', height: 200, resizeMode: 'contain', marginBottom: 10 }}
+                                    />
+                                    <Title style={[styles.cardTitle, { color: '#ffffff' }]}>
+                                        Class Routine Upload
+                                    </Title>
+                                    <Paragraph style={[styles.cardParagraph, { color: '#ffffff', textAlign: 'center' }]}>
+                                        Log in to Connect. Take a screenshot of your class routine. Upload the screenshot!
+                                    </Paragraph>
+                                </Card.Content>
+                            </Card>
+
+                            <Card style={styles.mainCard}>
+                                <Card.Content>
+                                    <PaperButton
+                                        mode="contained"
+                                        onPress={pickImage}
+                                        disabled={loading}
+                                        style={{ backgroundColor: theme.colors.primary }}
+                                        labelStyle={styles.scanButtonLabel}
+                                        icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
+                                    >
+                                        <Text>{loading ? "Recognizing..." : "Upload Screenshot"}</Text>
+                                    </PaperButton>
+
+                                    {imageUri && (
+                                        <View style={styles.imageContainer}>
+                                            <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+                                        </View>
+                                    )}
+
+                                    {loading && (
+                                        <View style={styles.loadingContainer}>
+                                            <ActivityIndicator size="large" color={theme.colors.primary} />
+                                            <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Recognizing text...</Text>
+                                        </View>
+                                    )}
+                                </Card.Content>
+                            </Card>
+                        </View>
+                    ) : (
+                        <Card style={styles.mainCard}>
+                            <Card.Content>
+                                <Title style={styles.cardTitle}>Add Course Manually</Title>
+                                <View style={localStyles.inputRow}>
+                                    <TextInput
+                                        style={[localStyles.input, { borderColor: theme.colors.primary, color: theme.colors.onSurface }]}
+                                        placeholder="Course Code (e.g., CSE220)"
+                                        placeholderTextColor={theme.colors.onSurfaceDisabled}
+                                        value={courseCode}
+                                        onChangeText={setCourseCode}
+                                        autoCapitalize="characters"
+                                    />
+                                    <TextInput
+                                        style={[localStyles.input, { borderColor: theme.colors.primary, color: theme.colors.onSurface }]}
+                                        placeholder="Section (e.g., 05)"
+                                        placeholderTextColor={theme.colors.onSurfaceDisabled}
+                                        value={sectionName}
+                                        onChangeText={setSectionName}
+                                        keyboardType="numeric"
+                                    />
+                                    <PaperButton
+                                        mode="contained"
+                                        onPress={handleAddCourse}
+                                        style={localStyles.addButton}
+                                        labelStyle={styles.scanButtonLabel}
+                                        icon={() => <Plus size={20} color={theme.colors.onPrimary} />}
+                                    />
+                                </View>
+                                <View style={localStyles.courseList}>
+                                    {manualCourses.length > 0 ? (
+                                        manualCourses.map((item, index) => (
+                                            <View key={index} style={localStyles.courseItem}>
+                                                <Text style={[localStyles.courseText, { color: theme.colors.onSurface }]}>{item.courseCode} - {item.sectionName}</Text>
+                                            </View>
+                                        ))
+                                    ) : (
+                                        <Text style={[localStyles.emptyText, { color: theme.colors.onSurfaceDisabled }]}>No courses added yet.</Text>
+                                    )}
+                                </View>
                                 <PaperButton
                                     mode="contained"
-                                    onPress={pickImage}
-                                    disabled={loading}
-                                    style={{ flex: 1, backgroundColor: theme.colors.primary }}
+                                    onPress={handleSaveManual}
+                                    disabled={manualCourses.length === 0 || loading}
+                                    style={[localStyles.saveButton, { backgroundColor: theme.colors.primary }]}
                                     labelStyle={styles.scanButtonLabel}
-                                    icon={() => <ScanText size={20} color={theme.colors.onPrimary} />}
                                 >
-                                    {loading ? "Recognizing..." : "Upload Screenshot"}
+                                    <Text>{loading ? "Saving..." : "Save Routine"}</Text>
                                 </PaperButton>
-                                <PaperButton
-                                    mode="outlined"
-                                    onPress={() => Alert.alert('Manual Input', 'Coming soon!')}
-                                    disabled={loading}
-                                    style={{ flex: 1, borderColor: theme.colors.primary }}
-                                    labelStyle={[styles.scanButtonLabel, { color: theme.colors.primary }]}
-                                >
-                                    Manual Input
-                                </PaperButton>
-                            </View>
-
-                            {imageUri && (
-                                <View style={styles.imageContainer}>
-                                    <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
-                                </View>
-                            )}
-
-                            {loading && (
-                                <View style={styles.loadingContainer}>
-                                    <ActivityIndicator size="large" color={theme.colors.primary} />
-                                    <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Recognizing text...</Text>
-                                </View>
-                            )}
-                        </Card.Content>
-                    </Card>
+                            </Card.Content>
+                        </Card>
+                    )}
                 </ScrollView>
             </View>
         </Modal>
@@ -302,6 +390,53 @@ const localStyles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
     },
+    tabContainer: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        paddingHorizontal: 10,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+        gap: 10,
+    },
+    input: {
+        flex: 1,
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        paddingVertical: 12,
+        fontSize: 16,
+    },
+    addButton: {
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 50,
+    },
+    courseList: {
+        marginTop: 15,
+        marginBottom: 15,
+    },
+    courseItem: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 6,
+        marginBottom: 8,
+    },
+    courseText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    emptyText: {
+        textAlign: 'center',
+        fontStyle: 'italic',
+    },
+    saveButton: {
+        marginTop: 10,
+    }
 });
 
 export default OcrScannerModal;

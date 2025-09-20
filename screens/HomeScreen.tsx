@@ -5,6 +5,7 @@ import ImageViewer from 'react-native-image-zoom-viewer';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { Trash2, ChevronLeft, ChevronRight, Bell, MapPin, User, PlusCircle, Image as ImageIcon, QrCode } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import OcrScannerModal from './OcrScanner';
 import ShareRoutineModal from './ShareRoutineModal'; // New component import
@@ -180,7 +181,7 @@ const convert24to12hr = (time) => {
     return `${hours}:${minutes}`;
 };
 
-const HomeScreen = () => { 
+const HomeScreen = ({ navigation }) => {
     const theme = useTheme();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
@@ -237,7 +238,6 @@ const HomeScreen = () => {
                 require('../assets/rest.gif'),
                 require('../assets/rest2.gif'),
                 require('../assets/rest3.gif'),
-                require('../assets/rest4.gif'),
             ];
             const randomGif = restGifs[Math.floor(Math.random() * restGifs.length)];
             setGifPath(randomGif);
@@ -249,7 +249,10 @@ const HomeScreen = () => {
     }, [selectedDate, scheduleData]);
 
     const handleScheduleFound = (data) => {
+        // Update local state
         setScheduleData(data);
+        // Navigate to Courses tab and pass the data as a parameter
+        navigation.navigate('Courses', { scheduleData: data });
     };
 
     const navigateDate = (direction) => {
