@@ -126,7 +126,7 @@ function ImageUploaderModal({ visible, onClose }) {
             <View style={{ flex: 1, backgroundColor: 'white' }}>
                 <View style={localStyles.modalHeader}>
                     <Text style={localStyles.modalTitle}>Quick Access Gallery</Text>
-                    <Text style={localStyles.modalSubtitle}>Store important images (eg. ID ).</Text>
+                    <Text style={localStyles.modalSubtitle}>Store important images (Year Planner, ID Card Etc ).</Text>
                     <TouchableOpacity
                         onPress={onClose}
                         style={localStyles.closeButton}

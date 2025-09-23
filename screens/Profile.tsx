@@ -282,13 +282,32 @@ const ProfileScreen = () => {
         ? gradesheetData.semesters[gradesheetData.semesters.length - 1].cumulativeCgpa
         : '3.68';
 
-    const totalCompletedCredits = gradesheetData
-        ? gradesheetData.semesters.reduce((total, semester) => {
-            return total + semester.courses
-                .filter(course => !course.isNonCredit)
-                .reduce((sum, course) => sum + course.credits, 0);
-        }, 0)
-        : 21;
+    // FIX START: CORRECTED LOGIC FOR totalCompletedCredits
+    const totalCompletedCredits = useMemo(() => {
+        if (!gradesheetData || !gradesheetData.semesters) {
+            return 0;
+        }
+
+        const uniqueCourses = {};
+        gradesheetData.semesters.forEach(semester => {
+            semester.courses.forEach(course => {
+                // Check if the course has a passing grade (gradePoints > 1.0)
+                const isPassing = parseFloat(course.gradePoints) > 1.0;
+
+                // Only consider the course if it's a passing attempt
+                if (isPassing) {
+                    // Store the course's credits under its code.
+                    // This overwrites previous attempts, effectively handling retakes.
+                    uniqueCourses[course.courseCode] = course.credits;
+                }
+            });
+        });
+
+        // Sum the credits of all the unique, passing courses
+        return Object.values(uniqueCourses).reduce((total, credits) => total + credits, 0);
+
+    }, [gradesheetData]);
+    // FIX END
 
     const chartConfig = {
         backgroundGradientFrom: theme.colors.surface,
@@ -347,10 +366,10 @@ const ProfileScreen = () => {
                 <Card style={[styles.profileCard, { backgroundColor: theme.colors.surface }]}>
                     <Card.Content>
                         <Title style={{ color: theme.colors.onSurface }}>
-                            {gradesheetData?.name || 'Dummy User'}
+                            {gradesheetData?.name || 'User User'}
                         </Title>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
-                            Student ID: {gradesheetData?.studentId || '22222222'}
+                            Student ID: {gradesheetData?.studentId || '7355608'}
                         </Paragraph>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
                             Major: {gradesheetData?.program || 'Computer Science'}
@@ -495,6 +514,7 @@ const ProfileScreen = () => {
             <CgpaCalcModal
                 visible={isCgpaModalVisible}
                 onClose={() => setIsCgpaModalVisible(false)}
+                gradesheetData={gradesheetData}
             />
             <GradesheetScannerModal
                 visible={isGradesheetModalVisible}

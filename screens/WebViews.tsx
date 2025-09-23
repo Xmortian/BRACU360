@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, TextInput, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Linking } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, SafeAreaView, Linking, TextInput, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Animated, Easing, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Appbar, Card, Title, Paragraph, useTheme, FAB, Button } from 'react-native-paper';
 import { WebView } from 'react-native-webview';
+import Papa from 'papaparse';
 import { ArrowLeft } from 'lucide-react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import styles from '../styles/styles';
 import CircularText from '../UI/CirculatText';
+import * as FileSystem from 'expo-file-system';
 
 const Stack = createNativeStackNavigator();
+
+const WEBSITES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvY9tPIIujpH1EPTGjkQgkasnahMbbU6PeCERsI46a3m2mmwhd3DSQhp1i_RM_8Ocf2kh9xVfkSd6z/pub?gid=0&single=true&output=csv';
 
 // --- Utility to send data to Google Form ---
 async function sendToGoogleForm(formUrl, fields) {
@@ -22,6 +26,45 @@ async function sendToGoogleForm(formUrl, fields) {
         body: formBody,
     });
 }
+
+// --- Scrolling Message Component ---
+const ScrollingMessage = ({ message }) => {
+    const { width } = Dimensions.get('window');
+    const scrollAnim = useRef(new Animated.Value(width)).current;
+
+    const fullMessage = message ? `${message}          `.repeat(100) : '';
+
+    useEffect(() => {
+        if (!message) return;
+
+        const animationDuration = 10000;
+        
+        const resetAnimation = () => {
+            scrollAnim.setValue(width);
+            Animated.timing(scrollAnim, {
+                toValue: -width,
+                duration: animationDuration,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            }).start(() => resetAnimation());
+        };
+
+        resetAnimation();
+        
+        return () => scrollAnim.stopAnimation();
+    }, [message, scrollAnim, width]);
+
+    return (
+        <View style={localStyles.scrollingMessageContainer}>
+            <Animated.Text
+                style={[localStyles.scrollingMessageText, { transform: [{ translateX: scrollAnim }] }]}
+                numberOfLines={1}
+            >
+                {fullMessage}
+            </Animated.Text>
+        </View>
+    );
+};
 
 // --- Website Adding Form Screen ---
 function WebsiteAddScreen() {
@@ -91,26 +134,66 @@ function WebsiteAddScreen() {
 }
 
 // --- Webview List Screen ---
-// Webview List Screen
 function WebviewListScreen() {
     const navigation = useNavigation();
     const theme = useTheme();
     const cardColors = ['#cce5cc', '#ffe0b3', '#b3d9ff', '#b3ffe0', '#ffe6ff'];
     
-    const websites = [
-        { name: 'PrePre-Reg', url: 'https://preprereg.vercel.app/' },
-        { name: 'Connect Unlocked', url: 'https://usis.eniamza.com/n' },
-        { name: 'Freelabs', url: 'https://freelabs.pages.dev/?fbclid=IwY2xjawMZidNleHRuA2FlbQIxMABicmlkETFKbmt3SGdhd1Z3QUNQSnc2AR56a8vwBRg7XFmSqGzrus_9kDtNQnEN3UDlw9WzL3ilm023hWOU6amIk5GJcg_aem_ouJteWW86PflxUs3kwz3pw' },
-        { name: 'Exam Schedule', url:'https://bracuexam.web.app/?fbclid=IwY2xjawMeZ3hleHRuA2FlbQIxMABicmlkETE5Tk01ajZzY2V5cGRybE1qAR7ARQqBX1kLLVnaYaNcriWGkbEYXnwEql3a31AM5l0D985vzLZvMg9xlTCl8g_aem_2zfnXT1Wt0Q1TNpt6eYyNQ'},
-        { name: 'BRACU Official', url: 'https://www.bracu.ac.bd/' },
-        { name: 'CSE Faculty Routines', url: 'https://docs.google.com/spreadsheets/d/1myGvBOTsxcMATsz_uTzr-kBpA0xn1291jO4p8_2hIxw/edit?usp=drivesdk' },
-        { name: 'CSE SDS', url: 'https://cse.sds.bracu.ac.bd/' },
-        { name: 'Thesis Supervising List', url: 'https://cse.sds.bracu.ac.bd/thesis/supervising/list' },
-        { name: 'BRACU Library', url: 'https://library.bracu.ac.bd/' },
-        { name: 'BRACU Express', url: 'https://bracuexpress.com/' },
-        { name: 'Connect Dump Analyzer', url: 'https://connect-dumps.itzmrz.xyz/?fbclid=IwZXh0bgNhZW0CMTAAYnJpZBExeW5jRnp6ZmxsbFFHQUVXZQEeRpFVC55fgVeGK9p9FfZar2Pb5J9xdxBnb0YgMtjSIiHuk6FXiFI-nXzYz-M_aem_JZNa-pmDfDf1oxKCtA0LPw' },
-        { name: 'Visit our store', url: 'https://www.facebook.com/Tridenta.giftshop' },
-    ];
+    const [websites, setWebsites] = useState([]);
+    const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(WEBSITES_CSV_URL);
+                const text = await response.text();
+
+                Papa.parse(text, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        if (results.data && results.data.length > 0) {
+                            const formattedWebsites = results.data
+                                .filter(row => row['Site Name'] && row['Site Link'])
+                                .map(row => ({
+                                    name: row['Site Name'],
+                                    url: row['Site Link']
+                                }));
+                            setWebsites(formattedWebsites);
+                            
+                            const firstValidRow = results.data.find(row => row['Message from the creator']);
+                            if (firstValidRow && firstValidRow['Message from the creator']) {
+                                setMessage(firstValidRow['Message from the creator']);
+                            } else {
+                                setMessage('');
+                            }
+                        }
+                        setLoading(false);
+                    },
+                    error: (err) => {
+                        console.error("PapaParse error:", err);
+                        Alert.alert("Error", "Failed to parse data from Google Sheet.");
+                        setLoading(false);
+                    }
+                });
+            } catch (error) {
+                console.error("Failed to fetch data:", error);
+                Alert.alert("Error", "Failed to load web links. Please check your internet connection.");
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    if (loading) {
+        return (
+            <View style={[styles.loadingContainer, { backgroundColor: '#000000' }]}>
+                <CircularText text="BRACU*360*" textColor="#fff" />
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.screenContainer, { backgroundColor: theme.colors.background, flex: 1 }]}>
@@ -119,6 +202,10 @@ function WebviewListScreen() {
                 <Appbar.Content title="Web Links" titleStyle={styles.appBarTitle} />
             </Appbar.Header>
             <ScrollView contentContainerStyle={[styles.paddingContainer, { paddingBottom: 80 }]}>
+                {message ? (
+                    <ScrollingMessage message={message} />
+                ) : null}
+
                 <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
                     Quick Access Websites
                 </Text>
@@ -128,8 +215,7 @@ function WebviewListScreen() {
                             key={index}
                             style={styles.webviewCardWrapper}
                             onPress={() => {
-                                // Updated condition to handle the new store link
-                                if (site.name === 'CSE Faculty Routines' || site.name === 'Visit our store') {
+                                if (site.url.includes('facebook.com') || site.url.includes('docs.google.com/spreadsheets')) {
                                     Linking.openURL(site.url).catch(err => {
                                         console.error('Failed to open URL:', err);
                                         Alert.alert("Error", "Could not open link. Please check the URL.");
@@ -159,27 +245,92 @@ function WebviewListScreen() {
         </View>
     );
 }
+
 // --- Webview Detail Screen ---
 function WebviewDetailScreen({ route }) {
     const { url, title } = route.params;
     const navigation = useNavigation();
     const theme = useTheme();
 
+    // Create a ref for the WebView component
+    const webviewRef = useRef(null);
+
+    // This state will track if the webview can go back
+    const [canGoBack, setCanGoBack] = useState(false);
+
+    // The function for the back button
+    const handleBackButtonPress = () => {
+        // Check if the webview can go back internally
+        if (webviewRef.current && canGoBack) {
+            webviewRef.current.goBack();
+        } else {
+            // If the webview can't go back, navigate back in the app's stack
+            navigation.goBack();
+        }
+    };
+    
+    const handleDownloadRequest = (request) => {
+        const url = request.url;
+        const fileExtension = url.split('.').pop().toLowerCase();
+        const downloadableExtensions = ['pdf', 'doc', 'docx', 'zip', 'mp4', 'jpg', 'png'];
+
+        if (downloadableExtensions.includes(fileExtension) && !url.includes('exp.host')) {
+            Alert.alert("Download File", "Do you want to download this file?", [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Download",
+                    onPress: async () => {
+                        const fileName = url.split('/').pop();
+                        const fileUri = FileSystem.documentDirectory + fileName;
+                        
+                        try {
+                            Alert.alert("Downloading...", `Downloading started for ${fileName}`);
+                            const { uri: localUri } = await FileSystem.downloadAsync(url, fileUri);
+                            
+                            if (localUri) {
+                                Alert.alert("Download Complete", `File downloaded to app cache: ${localUri}`);
+                            } else {
+                                Alert.alert("Download Failed", "An unknown error occurred during download.");
+                            }
+                        } catch (error) {
+                            console.error('Download failed:', error);
+                            Alert.alert("Download Failed", "An error occurred during the download.");
+                        }
+                    }
+                }
+            ]);
+            return false;
+        }
+        
+        return true;
+    };
+
     return (
-        <SafeAreaView style={[styles.screenContainer, { backgroundColor: theme.colors.background }]}>
+        <SafeAreaView style={[styles.screenContainer, { backgroundColor: '#000000' }]}>
             <Appbar.Header style={styles.appBar}>
-                <Appbar.Action icon={() => <ArrowLeft size={24} color={theme.colors.onPrimary} />} onPress={() => navigation.goBack()} />
+                {/* Use the new handleBackButtonPress function */}
+                <Appbar.BackAction onPress={handleBackButtonPress} />
                 <Appbar.Content title={title || "Webview"} titleStyle={styles.appBarTitle} />
             </Appbar.Header>
             <WebView
+                // Pass the ref to the WebView component
+                ref={webviewRef}
                 source={{ uri: url }}
-                style={styles.webview}
+                style={{ flex: 1, backgroundColor: '#000000' }}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 startInLoadingState={true}
+                onShouldStartLoadWithRequest={handleDownloadRequest}
+                // Update the canGoBack state based on navigation events
+                onNavigationStateChange={navState => {
+                    setCanGoBack(navState.canGoBack);
+                }}
                 renderLoading={() => (
                     <View style={localStyles.loadingContainer}>
-                        <CircularText text="BRACU*360*" />
+                        <CircularText text="BRACU*360*" textColor="#fff" />
                     </View>
                 )}
                 onError={(syntheticEvent) => {
@@ -191,7 +342,6 @@ function WebviewDetailScreen({ route }) {
         </SafeAreaView>
     );
 }
-
 
 // --- Main WebViews Component ---
 const WebViews = () => {
@@ -226,7 +376,7 @@ const localStyles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#121212',
+        backgroundColor: '#000000',
     },
     circularTextContainer: {
         justifyContent: 'center',
@@ -239,4 +389,19 @@ const localStyles = StyleSheet.create({
         fontWeight: '900',
         color: '#fff',
     },
+    scrollingMessageContainer: {
+        height: 40,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        backgroundColor: '#333',
+        paddingHorizontal: 16,
+        marginBottom: 15,
+    },
+    scrollingMessageText: {
+        fontSize: 16,
+        color: '#fff',
+        whiteSpace: 'nowrap',
+        position: 'absolute',
+        left: 0,
+    }
 });

@@ -114,39 +114,39 @@ const AdditionalScreen = () => {
   ];
 
   const Clubs = [
-    { name: 'Chess Club (BUCHC)', image: require('../assets/Clubs/CHESS.jpg') },
-    { name: 'Community Service Club (BUCSC)', image: require('../assets/Clubs/Community.jpg') },
-    { name: 'Adventure Club (BUAC)', image: require('../assets/Clubs/Adventure.jpg') },
-    { name: 'Art & Photography Society (BUAPS)', image: require('../assets/Clubs/Arts and Photography.jpg') },
-    { name: 'Cultural Club (BUCuC)', image: require('../assets/Clubs/Culture.jpg') },
-    { name: 'Debating Club (BUDC)', image: require('../assets/Clubs/Debate.jpg') },
-    { name: 'Drama and Theater Forum (BUDTF)', image: require('../assets/Clubs/Drama.jpg') },
-    { name: 'Entrepreneurship Forum (BUEDF)', image: require('../assets/Clubs/BUEDF.jpg') },
-    { name: 'Film Club (BUFC)', image: require('../assets/Clubs/Film.jpg') },
-    { name: 'Response Team (BURT)', image: require('../assets/Clubs/Response team.jpg') },
-    { name: 'Association of Business Communicators (IABC)', image: require('../assets/Clubs/IABC.jpg') },
-    { name: 'MONON', image: require('../assets/Clubs/Monon.jpg') },
-    { name: 'Leadership Development Forum (BULDF)', image: require('../assets/Clubs/Leadership and Development.jpg') },
-    { name: 'Communication & Language (BUCLC)', image: require('../assets/Clubs/Communication and language.jpg') },
-    { name: 'BRAC University Research for Development Club (BURed)', image: require('../assets/Clubs/Research and development.jpg') },
-    { name: 'Peace Café BRAC University (PCBU)', image: require('../assets/Clubs/Peace Cafe.jpg') },
-    { name: 'Multicultural Club (BUMC)', image: require('../assets/Clubs/Multi Culture club.jpg') },
-    { name: 'Business & Economics Forum (BUBeF)', image: require('../assets/Clubs/Businees and economics.jpg') },
-    { name: 'Business Club (BIZBEE)', image: require('../assets/Clubs/BizBee.jpg') },
-    { name: 'Finance and Accounting Club (FINACT)', image: require('../assets/Clubs/Finance Finact.jpg') },
-    { name: 'Computer Club (BUCC)', image: require('../assets/Clubs/Computer.jpg') },
-    { name: 'Economics Club (BUEC)', image: require('../assets/Clubs/Economics.jpg') },
-    { name: 'Electrical & Electronic Club (BUEEC)', image: require('../assets/Clubs/Electrical.jpg') },
-    { name: 'Law Society (BULC)', image: require('../assets/Clubs/Law.jpeg') },
-    { name: 'Marketing Association (BUMA)', image: require('../assets/Clubs/Marketing.jpg') },
-    { name: 'Natural Science (BUNSC)', image: require('../assets/Clubs/Natural science.jpg') },
-    { name: 'Pharmacy Society (BUPS)', image: require('../assets/Clubs/Pharma.jpg') },
-    { name: 'Robotics Club (ROBU)', image: require('../assets/Clubs/Robotics.jpg') },
-    { name: 'Cricket Club (CBU)', image: require('../assets/Clubs/Cricket.jpg') },
-    { name: 'Football Club (FCBU)', image: require('../assets/Clubs/Football.jpg') },
-    { name: 'Indoor Games Club (BUIGC)', image: require('../assets/Clubs/indoor games.jpg') },
-    { name: 'Brac University History Club (BUHC)', image: require('../assets/Clubs/History.jpg') },
-    { name: 'BRAC University Esports Club (BUESC)', image: require('../assets/Clubs/E sports.jpg') },
+    { name: 'Chess Club (BUCHC)', image: require('../assets/Clubs/CHESS.jpg'), link: 'https://www.facebook.com/realbuchc' },
+    { name: 'Community Service Club (BUCSC)', image: require('../assets/Clubs/Community.jpg'), link: 'https://www.facebook.com/BRACU.COMMUNITYSERVICECLUB' },
+    { name: 'Adventure Club (BUAC)', image: require('../assets/Clubs/Adventure.jpg'), link: 'https://www.facebook.com/buacofficial' },
+    { name: 'Art & Photography Society (BUAPS)', image: require('../assets/Clubs/Arts and Photography.jpg'), link: 'https://www.facebook.com/BRACUAPS' },
+    { name: 'Cultural Club (BUCuC)', image: require('../assets/Clubs/Culture.jpg'), link: 'https://www.facebook.com/bucuc' },
+    { name: 'Debating Club (BUDC)', image: require('../assets/Clubs/Debate.jpg'), link: 'https://www.facebook.com/BUDC.Offical' },
+    { name: 'Drama and Theater Forum (BUDTF)', image: require('../assets/Clubs/Drama.jpg'), link: 'https://www.facebook.com/bracu.dtf' },
+    { name: 'Entrepreneurship Forum (BUEDF)', image: require('../assets/Clubs/BUEDF.jpg'), link: 'https://www.facebook.com/BRACU.EDF' },
+    { name: 'Film Club (BUFC)', image: require('../assets/Clubs/Film.jpg'), link: 'https://www.facebook.com/BRACUFC' },
+    { name: 'Response Team (BURT)', image: require('../assets/Clubs/Response team.jpg'), link: 'https://www.facebook.com/buresponseteam' },
+    { name: 'Association of Business Communicators (IABC)', image: require('../assets/Clubs/IABC.jpg'), link: 'https://www.facebook.com/iabcbracu' },
+    { name: 'MONON', image: require('../assets/Clubs/Monon.jpg'), link: 'https://www.facebook.com/MONON.BRACU' },
+    { name: 'Leadership Development Forum (BULDF)', image: require('../assets/Clubs/Leadership and Development.jpg'), link: 'https://www.facebook.com/bracu.ldf' },
+    { name: 'Communication & Language (BUCLC)', image: require('../assets/Clubs/Communication and language.jpg'), link: 'https://www.facebook.com/BUCLC' },
+    { name: 'BRAC University Research for Development Club (BURed)', image: require('../assets/Clubs/Research and development.jpg'), link: 'https://www.facebook.com/BRACUReD' },
+    { name: 'Peace Café BRAC University (PCBU)', image: require('../assets/Clubs/Peace Cafe.jpg'), link: 'https://www.facebook.com/Peacecafe.BracU' },
+    { name: 'Multicultural Club (BUMC)', image: require('../assets/Clubs/Multi Culture club.jpg'), link: 'https://www.facebook.com/profile.php?id=100092476521133' },
+    { name: 'Business & Economics Forum (BUBeF)', image: require('../assets/Clubs/Businees and economics.jpg'), link: 'https://www.facebook.com/beforum' },
+    { name: 'Business Club (BIZBEE)', image: require('../assets/Clubs/BizBee.jpg'), link: 'https://www.facebook.com/bizbee.club' },
+    { name: 'Finance and Accounting Club (FINACT)', image: require('../assets/Clubs/Finance Finact.jpg'), link: 'https://www.facebook.com/FINACTBracu' },
+    { name: 'Computer Club (BUCC)', image: require('../assets/Clubs/Computer.jpg'), link: 'https://www.facebook.com/BRACUCC' },
+    { name: 'Economics Club (BUEC)', image: require('../assets/Clubs/Economics.jpg'), link: 'https://www.facebook.com/buec.official' },
+    { name: 'Electrical & Electronic Club (BUEEC)', image: require('../assets/Clubs/Electrical.jpg'), link: 'https://www.facebook.com/bracueec' },
+    { name: 'Law Society (BULC)', image: require('../assets/Clubs/Law.jpeg'), link: 'https://www.facebook.com/BULawSociety1' },
+    { name: 'Marketing Association (BUMA)', image: require('../assets/Clubs/Marketing.jpg'), link: 'https://www.facebook.com/bracubuma' },
+    { name: 'Natural Science (BUNSC)', image: require('../assets/Clubs/Natural science.jpg'), link: 'https://www.facebook.com/bracunsc' },
+    { name: 'Pharmacy Society (BUPS)', image: require('../assets/Clubs/Pharma.jpg'), link: 'https://www.facebook.com/BUPS.BRACU' },
+    { name: 'Robotics Club (ROBU)', image: require('../assets/Clubs/Robotics.jpg'), link: 'https://www.facebook.com/BRACU.Robotics.Club' },
+    { name: 'Cricket Club (CBU)', image: require('../assets/Clubs/Cricket.jpg'), link: 'https://www.facebook.com/CricketBRACUniversity' },
+    { name: 'Football Club (FCBU)', image: require('../assets/Clubs/Football.jpg'), link: 'https://www.facebook.com/official.fcbu11' },
+    { name: 'Indoor Games Club (BUIGC)', image: require('../assets/Clubs/indoor games.jpg'), link: 'https://www.facebook.com/indoorgamesclub' },
+    { name: 'Brac University History Club (BUHC)', image: require('../assets/Clubs/History.jpg'), link: 'https://www.facebook.com/profile.php?id=61562120219682' },
+    { name: 'BRAC University Esports Club (BUESC)', image: require('../assets/Clubs/E sports.jpg'), link: 'https://www.facebook.com/BRACUEsportsClub' },
   ];
 
   const importantContacts = [
@@ -221,14 +221,13 @@ const AdditionalScreen = () => {
   const renderClubItem = ({ item }) => (
     <TouchableOpacity
       style={[localStyles.clubListItem, { backgroundColor: theme.colors.surface }]}
-      onPress={() => {
-        Alert.alert('Club Info', `${item.name} details coming soon`);
-      }}
+      onPress={() => Linking.openURL(item.link)}
     >
       <Image source={item.image} style={localStyles.clubLogo} />
       <Text style={[styles.clubListItemText, { color: theme.colors.onSurface, flex: 1 }]}>
         {item.name}
       </Text>
+      <Facebook size={24} color={theme.colors.primary} />
     </TouchableOpacity>
   );
 
@@ -624,6 +623,8 @@ const AdditionalScreen = () => {
                 <Appbar.Content title="BRACU Clubs" titleStyle={[styles.appBarTitle, { color: theme.colors.onPrimary }]} />
               </Appbar.Header>
 
+              <Text style={[styles.betaText, { color: theme.colors.onSurfaceVariant, fontStyle: 'italic', textAlign: 'center' }]}>Under Development</Text>
+
               <Searchbar
                 placeholder="Search clubs"
                 onChangeText={setClubSearchQuery}
@@ -701,10 +702,14 @@ const AdditionalScreen = () => {
                   <Card style={[localStyles.featureCard, { backgroundColor: cardColors[index % cardColors.length] }]}>
                     <Card.Content style={{ justifyContent: 'center', alignItems: 'center' }}>
                       <Title style={[styles.webviewCardTitle, { color: theme.colors.onSurface }]}>{feature.name}</Title>
-                      {feature.name === 'Bus Schedule' || feature.name === 'Important Mails' || feature.name === 'Faculty Email Archive' || feature.name === 'Club Showcase' || feature.name === 'Course Resources' ? null : (
-                        <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>
-                          Coming soon
-                        </Paragraph>
+                      {feature.name === 'Club Showcase' ? (
+                          <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontStyle: 'italic' }}>beta</Paragraph>
+                      ) : (
+                          feature.name === 'Bus Schedule' || feature.name === 'Important Mails' || feature.name === 'Faculty Email Archive' || feature.name === 'Course Resources' ? null : (
+                              <Paragraph style={[styles.webviewCardUrl, { color: theme.colors.onSurfaceVariant }]}>
+                                  Coming soon
+                              </Paragraph>
+                          )
                       )}
                     </Card.Content>
                   </Card>

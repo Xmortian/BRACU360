@@ -1,41 +1,181 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, FlatList, Modal, StyleSheet, TextInput } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import { Plus, Edit, Trash } from 'lucide-react-native';
+import Svg, { Circle, G, Text as SvgText } from 'react-native-svg';
 import styles from '../styles/styles';
 
-const CgpaCalcModal = ({ visible, onClose }) => {
+// New: CGPA Wheel Component
+const CGPAWheel = ({ cgpa, maxCgpa }) => {
+    const theme = useTheme();
+    const radius = 60;
+    const strokeWidth = 10;
+    const normalizedRadius = radius - strokeWidth / 2;
+    const circumference = normalizedRadius * 2 * Math.PI;
+    const progress = (cgpa / maxCgpa) * 100;
+    const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+    return (
+        <View style={wheelStyles.wheelContainer}>
+            <Svg height={radius * 2} width={radius * 2} viewBox={`0 0 ${radius * 2} ${radius * 2}`}>
+                <G rotation="-90" origin={`${radius}, ${radius}`}>
+                    <Circle
+                        stroke={theme.colors.onSurfaceVariant}
+                        fill="none"
+                        cx={radius}
+                        cy={radius}
+                        r={normalizedRadius}
+                        strokeWidth={strokeWidth}
+                        opacity={0.3}
+                    />
+                    <Circle
+                        stroke={theme.colors.primary}
+                        fill="none"
+                        cx={radius}
+                        cy={radius}
+                        r={normalizedRadius}
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={strokeDashoffset}
+                        strokeLinecap="round"
+                    />
+                </G>
+                <SvgText
+                    x={radius}
+                    y={radius + 5}
+                    textAnchor="middle"
+                    alignmentBaseline="central"
+                    fontSize="24"
+                    fontWeight="bold"
+                    fill={theme.colors.onSurface}
+                >
+                    {cgpa.toFixed(2)}
+                </SvgText>
+            </Svg>
+            <Text style={[wheelStyles.maxText, { color: theme.colors.onSurfaceVariant }]}>Max {maxCgpa.toFixed(2)}</Text>
+        </View>
+    );
+};
+
+// New: Add Course Form Component
+const AddCourseForm = ({ onAddCourse, theme }) => {
+    const [courseName, setCourseName] = useState('');
+    const [credits, setCredits] = useState('');
+    const [grade, setGrade] = useState('');
+
+    const handleAdd = () => {
+        if (!courseName || !credits || !grade) {
+            Alert.alert("Missing Information", "Please fill out all fields to add a new course.");
+            return;
+        }
+
+        const newCourse = {
+            id: `custom-${Date.now()}`,
+            courseName: courseName.toUpperCase(),
+            credits: parseFloat(credits),
+            grade: parseFloat(grade),
+            semester: 'Custom',
+            isNonCredit: false,
+        };
+
+        if (isNaN(newCourse.credits) || isNaN(newCourse.grade) || newCourse.credits <= 0 || newCourse.grade < 0 || newCourse.grade > 4.0) {
+            Alert.alert("Invalid Input", "Credits must be a positive number, and grade must be between 0.0 and 4.0.");
+            return;
+        }
+
+        onAddCourse(newCourse);
+        setCourseName('');
+        setCredits('');
+        setGrade('');
+    };
+
+    return (
+        <View style={[formStyles.container, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
+            <Title style={{ color: theme.colors.onSurface, marginBottom: 15 }}>Add a New Course ➕</Title>
+            <TextInput
+                style={[formStyles.input, { color: theme.colors.onSurface, borderColor: theme.colors.outline }]}
+                onChangeText={setCourseName}
+                value={courseName}
+                placeholder="Course Code (e.g., CS101)"
+                placeholderTextColor={theme.colors.onSurfaceVariant}
+            />
+            <TextInput
+                style={[formStyles.input, { color: theme.colors.onSurface, borderColor: theme.colors.outline }]}
+                onChangeText={setCredits}
+                value={credits}
+                placeholder="Credits"
+                placeholderTextColor={theme.colors.onSurfaceVariant}
+                keyboardType="numeric"
+            />
+            <TextInput
+                style={[formStyles.input, { color: theme.colors.onSurface, borderColor: theme.colors.outline }]}
+                onChangeText={setGrade}
+                value={grade}
+                placeholder="Grade (0.0 - 4.0)"
+                placeholderTextColor={theme.colors.onSurfaceVariant}
+                keyboardType="numeric"
+            />
+            <PaperButton
+                mode="contained"
+                onPress={handleAdd}
+                style={formStyles.addButton}
+                labelStyle={formStyles.addButtonLabel}
+            >
+                Add Course
+            </PaperButton>
+        </View>
+    );
+};
+
+const CgpaCalcModal = ({ visible, onClose, gradesheetData }) => {
     const theme = useTheme();
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
     const [gradeInput, setGradeInput] = useState({});
     const [isEditing, setIsEditing] = useState(false);
+    const [grades, setGrades] = useState([]);
 
-    // Initial dummy data to simulate a gradesheet.
-    // This state will be reset on modal close, fulfilling the requirement.
-    const [grades, setGrades] = useState([
-        { id: '1', courseName: 'CSE250', credits: 3, grade: 3.0, semester: 'Spring 2023' },
-        { id: '2', courseName: 'CSE111', credits: 3, grade: 3.7, semester: 'Summer 2022' },
-        { id: '3', courseName: 'CSE220', credits: 3, grade: 3.3, semester: 'Fall 2022' },
-        { id: '4', courseName: 'MAT110', credits: 3, grade: 4.0, semester: 'Spring 2022' },
-        { id: '5', courseName: 'ENG101', credits: 3, grade: 3.5, semester: 'Spring 2022' },
-        { id: '6', courseName: 'CSE110', credits: 3, grade: 4.0, semester: 'Spring 2022' },
-        { id: '7', courseName: 'EEE101', credits: 3, grade: 3.0, semester: 'Fall 2022' },
-        { id: '8', courseName: 'HUM101', credits: 3, grade: 4.0, semester: 'Fall 2022' },
-        { id: '9', courseName: 'CSE221', credits: 3, grade: 4.0, semester: 'Fall 2022' },
-        { id: '10', courseName: 'PHY111', credits: 3, grade: 4.0, semester: 'Spring 2023' },
-    ]);
-
-    // Calculate CGPA based on the current 'grades' state
-    const calculateCGPA = (currentGrades) => {
-        if (currentGrades.length === 0) {
-            return 0;
+    useEffect(() => {
+        if (visible && gradesheetData && gradesheetData.semesters) {
+            const allCourses = [];
+            gradesheetData.semesters.forEach(semester => {
+                semester.courses.forEach(course => {
+                    allCourses.push({
+                        id: `${course.courseCode}-${Math.random()}`,
+                        courseName: course.courseCode,
+                        credits: course.credits,
+                        grade: parseFloat(course.gradePoints),
+                        semester: semester.name,
+                        isNonCredit: course.isNonCredit,
+                    });
+                });
+            });
+            setGrades(allCourses);
         }
-        const totalCredits = currentGrades.reduce((sum, course) => sum + course.credits, 0);
-        const totalGradePoints = currentGrades.reduce((sum, course) => sum + (course.credits * course.grade), 0);
-        return (totalGradePoints / totalCredits).toFixed(2);
+    }, [visible, gradesheetData]);
+
+    const calculateCGPA = (currentGrades) => {
+        const bestGrades = Object.values(
+            currentGrades.reduce((acc, c) => {
+                if (c.isNonCredit || c.grade < 1.0) return acc;
+                if (!acc[c.courseName]) {
+                    acc[c.courseName] = { ...c };
+                } else if (c.grade > acc[c.courseName].grade) {
+                    acc[c.courseName] = { ...c };
+                }
+                return acc;
+            }, {})
+        );
+
+        if (bestGrades.length === 0) return 0.00;
+
+        const totalCredits = bestGrades.reduce((sum, c) => sum + c.credits, 0);
+        const totalGradePoints = bestGrades.reduce(
+            (sum, c) => sum + (c.credits * c.grade), 0
+        );
+
+        return totalGradePoints / totalCredits;
     };
 
-    // Calculate what-if scenarios
     const calculateScenario = (gradeOverride) => {
         const scenarioGrades = grades.map(course => ({
             ...course,
@@ -44,20 +184,16 @@ const CgpaCalcModal = ({ visible, onClose }) => {
         return calculateCGPA(scenarioGrades);
     };
 
-    const calculateCurrentCGPA = () => calculateCGPA(grades);
-    const calculateMaxCGPA = () => calculateScenario(() => 4.0);
-    const calculateCGPAwithTenAs = () => calculateScenario((course) => (course.id === '1' || course.id === '2' || course.id === '3' || course.id === '4' || course.id === '5' || course.id === '6' || course.id === '7' || course.id === '8' || course.id === '9' || course.id === '10') ? 4.0 : course.grade);
-    const calculateCGPAwithTenAMinus = () => calculateScenario((course) => (course.id === '1' || course.id === '2' || course.id === '3' || course.id === '4' || course.id === '5' || course.id === '6' || course.id === '7' || course.id === '8' || course.id === '9' || course.id === '10') ? 3.7 : course.grade);
-    const calculateCGPAwithFiveAandFiveAMinus = () => calculateScenario((course) => {
-        const aCourses = ['1', '2', '3', '4', '5'];
-        const aMinusCourses = ['6', '7', '8', '9', '10'];
-        if (aCourses.includes(course.id)) return 4.0;
-        if (aMinusCourses.includes(course.id)) return 3.7;
-        return course.grade;
-    });
+    const currentCGPA = calculateCGPA(grades);
+    const maxCGPA = calculateScenario(() => 4.0);
+
+    const handleCloseModal = () => {
+        setGrades([]);
+        setShowAdvancedSettings(false);
+        onClose();
+    };
 
     const handleEditGrade = (course) => {
-        // Set the course ID and current grade in state for the input
         setGradeInput({ [course.id]: course.grade.toString() });
         setIsEditing(true);
     };
@@ -96,22 +232,10 @@ const CgpaCalcModal = ({ visible, onClose }) => {
         );
     };
     
-    // Reset state when modal is closed to revert to default
-    const handleCloseModal = () => {
-        setGrades([
-            { id: '1', courseName: 'CSE250', credits: 3, grade: 3.0, semester: 'Spring 2023' },
-            { id: '2', courseName: 'CSE111', credits: 3, grade: 3.7, semester: 'Summer 2022' },
-            { id: '3', courseName: 'CSE220', credits: 3, grade: 3.3, semester: 'Fall 2022' },
-            { id: '4', courseName: 'MAT110', credits: 3, grade: 4.0, semester: 'Spring 2022' },
-            { id: '5', courseName: 'ENG101', credits: 3, grade: 3.5, semester: 'Spring 2022' },
-            { id: '6', courseName: 'CSE110', credits: 3, grade: 4.0, semester: 'Spring 2022' },
-            { id: '7', courseName: 'EEE101', credits: 3, grade: 3.0, semester: 'Fall 2022' },
-            { id: '8', courseName: 'HUM101', credits: 3, grade: 4.0, semester: 'Fall 2022' },
-            { id: '9', courseName: 'CSE221', credits: 3, grade: 4.0, semester: 'Fall 2022' },
-            { id: '10', courseName: 'PHY111', credits: 3, grade: 4.0, semester: 'Spring 2023' },
-        ]);
-        setShowAdvancedSettings(false);
-        onClose();
+    // New: Handle add course
+    const handleAddCourse = (newCourse) => {
+        setGrades(prevGrades => [...prevGrades, newCourse]);
+        Alert.alert("Course Added", `${newCourse.courseName} has been added and the CGPA has been recalculated.`);
     };
 
     const renderCourseCard = ({ item }) => (
@@ -154,36 +278,45 @@ const CgpaCalcModal = ({ visible, onClose }) => {
     );
 
     const renderHeader = () => (
-        <View>
-            {/* Current and What-If CGPA Display */}
-            <Card style={[styles.cgpaCard, { backgroundColor: theme.colors.surface, marginBottom: 20 }]}>
-                <Card.Content style={styles.cgpaDetails}>
-                    <Title style={{ color: theme.colors.onSurface }}>Current CGPA</Title>
-                    <Text style={[styles.cgpaValueText, { color: theme.colors.primary }]}>{calculateCurrentCGPA()}</Text>
-                </Card.Content>
-            </Card>
-            <Card style={[styles.cgpaCard, { backgroundColor: theme.colors.surface, marginBottom: 20 }]}>
-                <Card.Content>
-                    <Title style={{ color: theme.colors.onSurface }}>What-If Scenarios</Title>
-                    <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>Max Possible CGPA: <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{calculateMaxCGPA()}</Text></Paragraph>
-                    <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>CGPA (10 A's): <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{calculateCGPAwithTenAs()}</Text></Paragraph>
-                    <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>CGPA (10 A-'s): <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{calculateCGPAwithTenAMinus()}</Text></Paragraph>
-                    <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>CGPA (5 A's & 5 A-'s): <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{calculateCGPAwithFiveAandFiveAMinus()}</Text></Paragraph>
-                </Card.Content>
-            </Card>
-
-            {/* Advanced Settings Toggle */}
+        <View style={modalStyles.headerContainer}>
+            <View style={modalStyles.cgpaSummary}>
+                <View style={modalStyles.cgpaCurrent}>
+                    <Title style={{ color: theme.colors.onSurface, fontSize: 16, textAlign: 'left' }}>Current CGPA</Title>
+                    <Text style={[modalStyles.cgpaCurrentValue, { color: theme.colors.primary }]}>{currentCGPA.toFixed(2)}</Text>
+                </View>
+                <CGPAWheel cgpa={currentCGPA} maxCgpa={4.0} />
+            </View>
+            <View style={modalStyles.scenarioContainer}>
+                <Card style={[styles.cgpaCard, { backgroundColor: theme.colors.surface }]}>
+                    <Card.Content>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
+                            <Text>CGPA with all A's: </Text>
+                            <Text style={{ color: theme.colors.primary }}>{calculateScenario(() => 4.0).toFixed(2)}</Text>
+                        </Paragraph>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
+                            <Text>CGPA with all A-'s: </Text>
+                            <Text style={{ color: theme.colors.primary }}>{calculateScenario(() => 3.7).toFixed(2)}</Text>
+                        </Paragraph>
+                        <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
+                            <Text>CGPA with all B+'s: </Text>
+                            <Text style={{ color: theme.colors.primary }}>{calculateScenario(() => 3.3).toFixed(2)}</Text>
+                        </Paragraph>
+                    </Card.Content>
+                </Card>
+            </View>
             <TouchableOpacity onPress={() => setShowAdvancedSettings(!showAdvancedSettings)} style={[styles.advancedToggle, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}>
-                <Text style={{ color: theme.colors.onSurface }}>{showAdvancedSettings ? 'Hide Advanced Settings' : 'Show Advanced Settings'}</Text>
+                <Text style={{ color: theme.colors.onSurface }}>{showAdvancedSettings ? 'Hide Recalculate Grades' : 'Recalculate Grades'}</Text>
             </TouchableOpacity>
-
-            {/* Advanced Recalculator Section */}
             {showAdvancedSettings && (
                 <View style={modalStyles.courseListHeader}>
-                    <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>Recalculate Grades</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>Your Courses</Text>
                 </View>
             )}
         </View>
+    );
+
+    const renderFooter = () => (
+        <AddCourseForm onAddCourse={handleAddCourse} theme={theme} />
     );
 
     return (
@@ -197,10 +330,10 @@ const CgpaCalcModal = ({ visible, onClose }) => {
                 <View style={[modalStyles.modalContainer, { backgroundColor: theme.colors.background }]}>
                     <Appbar.Header style={[styles.appBar, { backgroundColor: 'transparent', elevation: 0 }]}>
                         <Appbar.Content title="CGPA Calculator" titleStyle={styles.appBarTitle} />
-                        <PaperButton 
-                            icon="close" 
-                            onPress={handleCloseModal} 
-                            mode="text" 
+                        <PaperButton
+                            icon="close"
+                            onPress={handleCloseModal}
+                            mode="text"
                             labelStyle={{ color: theme.colors.primary }}
                         >
                             Close
@@ -211,6 +344,7 @@ const CgpaCalcModal = ({ visible, onClose }) => {
                         renderItem={renderCourseCard}
                         keyExtractor={item => item.id}
                         ListHeaderComponent={renderHeader}
+                        ListFooterComponent={showAdvancedSettings ? renderFooter : null}
                         contentContainerStyle={[styles.paddingContainer, { paddingBottom: 100 }]}
                     />
                 </View>
@@ -219,7 +353,6 @@ const CgpaCalcModal = ({ visible, onClose }) => {
     );
 };
 
-// New styles for the modal overlay and container
 const modalStyles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
@@ -231,6 +364,31 @@ const modalStyles = StyleSheet.create({
         backgroundColor: '#fff',
         borderTopLeftRadius: 12,
         borderTopRightRadius: 12,
+    },
+    headerContainer: {
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 10,
+    },
+    cgpaSummary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 20,
+    },
+    cgpaCurrent: {
+        flex: 1,
+        alignItems: 'flex-start',
+    },
+    cgpaCurrentValue: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        marginTop: 5,
+    },
+    scenarioContainer: {
+        width: '100%',
+        marginBottom: 20,
     },
     courseCardContent: {
         flexDirection: 'row',
@@ -269,6 +427,43 @@ const modalStyles = StyleSheet.create({
     courseListHeader: {
         marginTop: 20,
         marginBottom: 10,
+        width: '100%',
+    },
+});
+
+const wheelStyles = StyleSheet.create({
+    wheelContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    maxText: {
+        fontSize: 12,
+        marginTop: 5,
+        fontWeight: 'bold',
+    },
+});
+
+const formStyles = StyleSheet.create({
+    container: {
+        padding: 20,
+        borderRadius: 15,
+        borderWidth: 1,
+        marginTop: 20,
+    },
+    input: {
+        height: 50,
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        marginBottom: 15,
+        fontSize: 16,
+    },
+    addButton: {
+        marginTop: 10,
+        borderRadius: 10,
+    },
+    addButtonLabel: {
+        fontSize: 16,
     },
 });
 
