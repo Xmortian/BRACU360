@@ -49,16 +49,16 @@ const ZoomableImageViewerModal = ({ visible, onClose, imageUri }) => {
     const images = imageUri ? [{ url: imageUri }] : [];
 
     return (
-        <Modal
-            visible={visible}
-            transparent={true}
+        <Modal 
+            visible={visible} 
+            transparent={true} 
             onRequestClose={onClose}
         >
             <ImageViewer 
                 imageUrls={images} 
-                onCancel={onClose}
-                onSwipeDown={onClose}
-                enableSwipeDown={true}
+                onCancel={onClose} 
+                onSwipeDown={onClose} 
+                enableSwipeDown={true} 
                 renderIndicator={() => null}
                 renderHeader={() => (
                     <View style={uiStyles.imageViewerHeader}>
@@ -124,12 +124,36 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
         }
     };
 
+    const handleQrCodeScanned = (scannedData) => {
+        setIsQrScannerVisible(false);
+        try {
+            const routineData = JSON.parse(scannedData);
+            if (Array.isArray(routineData) && routineData.length > 0) {
+                const courses = routineData.map(c => c.courseName).join(', ');
+                onAddFriend({
+                    id: Math.random().toString(),
+                    name: friendName,
+                    courses: courses,
+                    contact: friendContact || '',
+                    routineData: routineData,
+                    semester: selectedSemester,
+                    routineImageUri: '',
+                });
+                handleCloseModal();
+                Alert.alert('Success', `Routine uploaded for ${friendName} via QR! Found courses: ${courses}`);
+            } else {
+                Alert.alert('No Courses Found', 'QR code did not contain valid routine data.');
+            }
+        } catch (e) {
+            Alert.alert('QR Code Error', 'Could not parse data from QR code. It may be in an invalid format.');
+        }
+    };
+
     const handleSaveFriend = () => {
         if (!friendName.trim()) {
             Alert.alert('Error', 'Please enter a friend\'s name.');
             return;
         }
-        // Simplified save logic if no routine is uploaded yet
         onAddFriend({
             id: Math.random().toString(),
             name: friendName,
@@ -143,10 +167,10 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
     };
 
     return (
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={visible}
+        <Modal 
+            animationType="slide" 
+            transparent={true} 
+            visible={visible} 
             onRequestClose={handleCloseModal}
         >
             <View style={uiStyles.modalOverlay}>
@@ -202,7 +226,7 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
                     </ScrollView>
                 </View>
             </View>
-            <Modal
+            <Modal 
                 animationType="fade"
                 transparent={true}
                 visible={isSemesterPickerVisible}
@@ -237,6 +261,7 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
             <QrScannerModal
                 visible={isQrScannerVisible}
                 onClose={() => setIsQrScannerVisible(false)}
+                onQrCodeScanned={handleQrCodeScanned}
             />
             <OcrScannerModal
                 visible={isOcrScannerVisible}
@@ -281,6 +306,30 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
         onClose();
     };
 
+    const handleQrCodeReupload = (scannedData) => {
+        setIsQrScannerVisible(false);
+        try {
+            const routineData = JSON.parse(scannedData);
+            if (Array.isArray(routineData) && routineData.length > 0) {
+                const newCourses = routineData.map(c => c.courseName).join(', ');
+                const updatedFriend = {
+                    ...friend,
+                    courses: newCourses,
+                    routineData: routineData,
+                    semester: selectedSemester,
+                };
+                onSave(updatedFriend);
+                Alert.alert('Success', 'New routine uploaded and processed via QR.');
+            } else {
+                Alert.alert('No Courses Found', 'QR code did not contain valid routine data.');
+            }
+            onClose();
+        } catch (e) {
+            Alert.alert('QR Code Error', 'Could not parse data from QR code. It may be in an invalid format.');
+            onClose();
+        }
+    };
+
     const handleSave = () => {
         const updatedFriend = {
             ...friend,
@@ -292,10 +341,10 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
     };
 
     return (
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={visible}
+        <Modal 
+            animationType="slide" 
+            transparent={true} 
+            visible={visible} 
             onRequestClose={onClose}
         >
             <View style={uiStyles.modalOverlay}>
@@ -345,7 +394,7 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
                     </ScrollView>
                 </View>
             </View>
-            <Modal
+            <Modal 
                 animationType="fade"
                 transparent={true}
                 visible={isSemesterPickerVisible}
@@ -380,6 +429,7 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
             <QrScannerModal
                 visible={isQrScannerVisible}
                 onClose={() => setIsQrScannerVisible(false)}
+                onQrCodeScanned={handleQrCodeReupload}
             />
             <OcrScannerModal
                 visible={isOcrScannerVisible}
@@ -388,6 +438,161 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
             />
         </Modal>
     );
+};
+
+const parseTimeToMinutes = (timeString) => {
+    // Basic time parsing without regular expressions
+    if (typeof timeString !== 'string' || !timeString.includes(':')) {
+        return -1;
+    }
+    
+    const parts = timeString.split(/[\s:]/);
+    let hour = parseInt(parts[0], 10);
+    const minute = parseInt(parts[1], 10);
+    const period = (parts[2] || '').toUpperCase();
+
+    if (period === 'PM' && hour !== 12) {
+        hour += 12;
+    }
+    if (period === 'AM' && hour === 12) {
+        hour = 0;
+    }
+    return hour * 60 + minute;
+};
+
+const getMinutesSinceLastClass = (endTime) => {
+    const now = new Date();
+    const nowInMinutes = now.getHours() * 60 + now.getMinutes();
+    const endMinutes = parseTimeToMinutes(endTime);
+    
+    if (endMinutes === -1) return -1;
+
+    // Check if the time has wrapped around to the next day
+    if (nowInMinutes < endMinutes) {
+        return (nowInMinutes + 24 * 60) - endMinutes;
+    }
+
+    return nowInMinutes - endMinutes;
+};
+
+const getMinutesUntilNextClass = (startTime) => {
+    const now = new Date();
+    const nowInMinutes = now.getHours() * 60 + now.getMinutes();
+    const startMinutes = parseTimeToMinutes(startTime);
+
+    if (startMinutes === -1) return -1;
+
+    // Check if the next class is on the next day
+    if (startMinutes < nowInMinutes) {
+        return (startMinutes + 24 * 60) - nowInMinutes;
+    }
+
+    return startMinutes - nowInMinutes;
+};
+
+const formatTimeDifference = (minutes) => {
+    if (minutes < 0) return 'in the past';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    let result = '';
+    if (hours > 0) {
+        result += `${hours} hour${hours > 1 ? 's' : ''}`;
+    }
+    if (mins > 0) {
+        if (result) result += ' ';
+        result += `${mins} minute${mins > 1 ? 's' : ''}`;
+    }
+    return result || 'less than a minute';
+};
+
+const getFriendStatus = (routineData) => {
+    if (!Array.isArray(routineData) || routineData.length === 0) {
+        return 'No routine uploaded';
+    }
+    
+    const now = new Date();
+    const today = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(now).toUpperCase();
+    const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const todaysClasses = routineData.flatMap(course => {
+        if (!Array.isArray(course.classTimes)) {
+            return [];
+        }
+
+        return course.classTimes
+            .filter(c => c.day.toUpperCase() === today)
+            .map(c => ({
+                courseName: course.courseName,
+                startTime: parseTimeToMinutes(c.startTime),
+                endTime: parseTimeToMinutes(c.endTime),
+                roomName: c.roomName || course.room
+            }));
+    });
+    
+    if (todaysClasses.length === 0) {
+        return 'Off day';
+    }
+    
+    todaysClasses.sort((a, b) => a.startTime - b.startTime);
+    
+    const firstClass = todaysClasses[0];
+    const lastClass = todaysClasses[todaysClasses.length - 1];
+    
+    // Check if class times are valid after parsing
+    if (firstClass.startTime === -1 || lastClass.endTime === -1) {
+        return 'Routine data error';
+    }
+
+    // Currently in a class
+    for (const cls of todaysClasses) {
+        if (cls.startTime !== -1 && cls.endTime !== -1 && currentTimeInMinutes >= cls.startTime && currentTimeInMinutes < cls.endTime) {
+            return `Classing in ${cls.roomName}`;
+        }
+    }
+    
+    // Before first class
+    if (currentTimeInMinutes < firstClass.startTime) {
+        const minutesUntil = getMinutesUntilNextClass(firstClass.startTime);
+        const formattedTime = formatTimeDifference(minutesUntil);
+        return `First Class Begins in ${formattedTime}`;
+    }
+
+    // After last class
+    if (currentTimeInMinutes >= lastClass.endTime) {
+        const minutesSince = getMinutesSinceLastClass(lastClass.endTime);
+        const formattedTime = formatTimeDifference(minutesSince);
+        return `Last class ended ${formattedTime} ago`;
+    }
+    
+    // In a class gap
+    for (let i = 0; i < todaysClasses.length - 1; i++) {
+        const currentClassEnd = todaysClasses[i].endTime;
+        const nextClassStart = todaysClasses[i + 1].startTime;
+        if (currentClassEnd !== -1 && nextClassStart !== -1 && currentTimeInMinutes >= currentClassEnd && currentTimeInMinutes < nextClassStart) {
+            const minutesFree = getMinutesUntilNextClass(todaysClasses[i + 1].startTime);
+            const formattedTime = formatTimeDifference(minutesFree);
+            return `Class Gap (Free for ${formattedTime})`;
+        }
+    }
+    
+    return 'Status not determined';
+};
+
+const getUniqueCourses = (routineData) => {
+    // FIX: Check if routineData is a valid array before proceeding
+    if (!Array.isArray(routineData)) {
+        return [];
+    }
+    
+    const uniqueCourses = new Set();
+    return routineData.filter(course => {
+        const baseCourseName = course.courseName.replace(/L$/, '');
+        if (!uniqueCourses.has(baseCourseName)) {
+            uniqueCourses.add(baseCourseName);
+            return true;
+        }
+        return false;
+    });
 };
 
 const FriendsScreen = () => {
@@ -401,7 +606,52 @@ const FriendsScreen = () => {
     };
 
     const [friends, setFriends] = useState([
-        { id: '1', name: 'Alice Smith', courses: 'MAT216, CSE230, PHY110', status: 'Off day', contact: '01234567890', semester: 'Summer 2025', routineImageUri: 'https://via.placeholder.com/300/00C853/FFFFFF?text=Routine+Alice', routineData: [] },
+        { 
+            id: '1', 
+            name: 'Alice Smith', 
+            courses: 'MAT216, CSE230, PHY110', 
+            status: 'Off day', 
+            contact: '01234567890', 
+            semester: 'Summer 2025', 
+            routineImageUri: 'https://via.placeholder.com/300/00C853/FFFFFF?text=Routine+Alice', 
+            routineData: [
+                {
+                    "courseName": "CSE421-14-09A-02C",
+                    "classTimes": [
+                        { "day": "Monday", "startTime": "11:00 AM", "endTime": "12:20 PM" },
+                        { "day": "Monday", "startTime": "12:30 PM", "endTime": "01:50 PM" }
+                    ]
+                },
+                {
+                    "courseName": "CSE331-04-KKP-07H-27C",
+                    "classTimes": [
+                        { "day": "Monday", "startTime": "09:30 AM", "endTime": "10:50 AM" },
+                        { "day": "Wednesday", "startTime": "09:30 AM", "endTime": "10:50 AM" }
+                    ]
+                },
+                {
+                    "courseName": "CSE423-02-TMD-09A-05C",
+                    "classTimes": [
+                        { "day": "Monday", "startTime": "03:30 PM", "endTime": "04:50 PM" },
+                        { "day": "Wednesday", "startTime": "03:30 PM", "endTime": "04:50 PM" }
+                    ]
+                },
+                {
+                    "courseName": "CSE470-16-SOSB-07D-20C",
+                    "classTimes": [
+                        { "day": "Tuesday", "startTime": "02:00 PM", "endTime": "03:20 PM" },
+                        { "day": "Sunday", "startTime": "02:00 PM", "endTime": "03:20 PM" }
+                    ]
+                },
+                {
+                    "courseName": "CSE423-02-TMD-10E-27L",
+                    "classTimes": [
+                        { "day": "Tuesday", "startTime": "08:00 AM", "endTime": "09:20 AM" },
+                        { "day": "Tuesday", "startTime": "09:30 AM", "endTime": "10:50 AM" }
+                    ]
+                }
+            ]
+        },
         { id: '2', name: 'Bob Johnson', courses: 'CSE470, EEE300', status: 'Class Gap (Next class in 1 hour 20 minutes)', contact: '01234567891', semester: 'Fall 2024', routineImageUri: 'https://via.placeholder.com/300/FF5733/FFFFFF?text=Routine+Bob', routineData: [] },
         { id: '3', name: 'Charlie Brown', courses: 'CSE110, MAT120', status: 'First Class Begins in 2 hours', contact: '01234567892', semester: 'Summer 2025', routineImageUri: '', routineData: [] },
         { id: '4', name: 'Diana Prince', courses: 'BBA101, ECO101', status: 'Last class Ended in 30 minutes', contact: '', semester: 'Spring 2025', routineImageUri: '', routineData: [] },
@@ -412,112 +662,6 @@ const FriendsScreen = () => {
     const [currentFriend, setCurrentFriend] = useState(null);
     const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
     const [selectedImageUri, setSelectedImageUri] = useState(null);
-
-    const getMinutesSinceLastClass = (endTime) => {
-        const now = new Date();
-        const [endHour, endMinute] = endTime.match(/\d{1,2}/g).map(Number);
-        const endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute, 0, 0);
-        const diffInMs = now.getTime() - endDateTime.getTime();
-        return Math.floor(diffInMs / 60000);
-    };
-
-    const getMinutesUntilNextClass = (startTime) => {
-        const now = new Date();
-        const [startHour, startMinute] = startTime.match(/\d{1,2}/g).map(Number);
-        const startDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute, 0, 0);
-        const diffInMs = startDateTime.getTime() - now.getTime();
-        return Math.floor(diffInMs / 60000);
-    };
-
-    const formatTimeDifference = (minutes) => {
-        if (minutes < 0) return 'in the past';
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        let result = '';
-        if (hours > 0) {
-            result += `${hours} hour${hours > 1 ? 's' : ''}`;
-        }
-        if (mins > 0) {
-            if (result) result += ' ';
-            result += `${mins} minute${mins > 1 ? 's' : ''}`;
-        }
-        return result || 'less than a minute';
-    };
-
-    const getFriendStatus = (routineData) => {
-        if (!routineData || routineData.length === 0) {
-            return 'No routine uploaded';
-        }
-        
-        const now = new Date();
-        const today = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(now).toUpperCase();
-        const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-
-        const todaysClasses = routineData.flatMap(course =>
-            course.classTimes
-                .filter(c => c.day.toUpperCase() === today)
-                .map(c => ({
-                    startTime: parseInt(c.startTime.replace(':', ''), 10),
-                    endTime: parseInt(c.endTime.replace(':', ''), 10),
-                    roomName: c.roomName || course.room
-                }))
-        );
-
-        if (todaysClasses.length === 0) {
-            return 'Off day';
-        }
-
-        todaysClasses.sort((a, b) => a.startTime - b.startTime);
-
-        const firstClass = todaysClasses[0];
-        const lastClass = todaysClasses[todaysClasses.length - 1];
-
-        // Currently in a class
-        for (const cls of todaysClasses) {
-            if (currentTimeInMinutes >= cls.startTime && currentTimeInMinutes < cls.endTime) {
-                return `Classing in ${cls.roomName}`;
-            }
-        }
-
-        // Before first class
-        if (currentTimeInMinutes < firstClass.startTime) {
-            const minutesUntil = getMinutesUntilNextClass(firstClass.startTime.toString());
-            const formattedTime = formatTimeDifference(minutesUntil);
-            return `First Class Begins in ${formattedTime}`;
-        }
-
-        // After last class
-        if (currentTimeInMinutes >= lastClass.endTime) {
-            const minutesSince = getMinutesSinceLastClass(lastClass.endTime.toString());
-            const formattedTime = formatTimeDifference(minutesSince);
-            return `Last class ended ${formattedTime} ago`;
-        }
-        
-        // In a class gap
-        for (let i = 0; i < todaysClasses.length - 1; i++) {
-            const currentClassEnd = todaysClasses[i].endTime;
-            const nextClassStart = todaysClasses[i + 1].startTime;
-            if (currentTimeInMinutes >= currentClassEnd && currentTimeInMinutes < nextClassStart) {
-                const minutesFree = getMinutesUntilNextClass(todaysClasses[i + 1].startTime.toString());
-                const formattedTime = formatTimeDifference(minutesFree);
-                return `Class Gap (Free for ${formattedTime})`;
-            }
-        }
-
-        return 'Status not determined';
-    };
-
-    const getUniqueCourses = (routineData) => {
-        const uniqueCourses = new Set();
-        return routineData.filter(course => {
-            const baseCourseName = course.courseName.replace(/L$/, '');
-            if (!uniqueCourses.has(baseCourseName)) {
-                uniqueCourses.add(baseCourseName);
-                return true;
-            }
-            return false;
-        });
-    };
 
     const handleViewRoutine = (imageUri) => {
         if (!imageUri) {

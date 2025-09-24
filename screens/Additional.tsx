@@ -649,33 +649,13 @@ const AdditionalScreen = () => {
                 }]}>
                   <Card style={[localStyles.webviewButtonCard, { backgroundColor: theme.colors.primary }]}>
                     <Card.Content style={localStyles.webviewButtonContent}>
-                      <Title style={[localStyles.webviewButtonTitle, { color: 'white' }]}>Quick Web Links</Title>
-                      <Paragraph style={[localStyles.webviewButtonSubtitle, { color: 'rgba(255, 255, 255, 0.8)' }]}>Access all web links in one place</Paragraph>
-                      {/* Circling light beams */}
-                      <Animated.View style={[localStyles.lightBeam, localStyles.mainLight, {
-                        transform: [{
-                          rotate: circlingLightAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ['0deg', '360deg'],
-                          }),
-                        }],
-                      }]} />
-                      <Animated.View style={[localStyles.lightBeam, localStyles.smallLight1, {
-                        transform: [{
-                          rotate: circlingLightAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ['120deg', '480deg'],
-                          }),
-                        }],
-                      }]} />
-                      <Animated.View style={[localStyles.lightBeam, localStyles.smallLight2, {
-                        transform: [{
-                          rotate: circlingLightAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ['240deg', '600deg'],
-                          }),
-                        }],
-                      }]} />
+<StarBorder as={View} speed="4s" color="white" style={localStyles.starBorderContainer}>
+    <Title style={[localStyles.webviewButtonTitle, { color: 'cyan' }]}>
+        Quick Web Links
+    </Title>
+</StarBorder>                      
+<Paragraph style={[localStyles.webviewButtonSubtitle, { color: 'rgba(255, 255, 255, 0.8)' }]}>Access all web links in one place</Paragraph>
+
                     </Card.Content>
                   </Card>
                 </Animated.View>
@@ -686,7 +666,7 @@ const AdditionalScreen = () => {
               placeholder="Search features"
               onChangeText={setSearchQuery}
               value={searchQuery}
-              style={{ marginBottom: 16 }}
+              style={{ marginTop: 16 }}
               ref={searchbarRef}
             />
 
@@ -716,43 +696,6 @@ const AdditionalScreen = () => {
                 </TouchableOpacity>
               ))}
             </View>
-
-            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>
-              Feedback
-            </Text>
-            <Card style={[styles.profileCard, { backgroundColor: '#000' }]}>
-              <Card.Content>
-                <Title style={{ color: '#fff' }}>We value your feedback</Title>
-                <Paragraph style={{ color: '#ccc', marginBottom: 10 }}>
-                  Share your thoughts or suggestions with us.
-                </Paragraph>
-
-                <Text style={{ color: '#fff', marginBottom: 5 }}>ID (Optional)</Text>
-                <TextInput
-                  value={feedbackName}
-                  onChangeText={setFeedbackName}
-                  style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, marginBottom: 15 }}
-                  placeholderTextColor="#777"
-                />
-                <Text style={{ color: '#fff', marginBottom: 5 }}>Feedback</Text>
-                <TextInput
-                  value={feedbackMessage}
-                  onChangeText={setFeedbackMessage}
-                  multiline
-                  style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, height: 100 }}
-                  placeholderTextColor="#777"
-                />
-
-                <PaperButton
-                  mode="contained"
-                  onPress={handleFeedbackSubmit}
-                  loading={isSubmitting}
-                  style={{ marginTop: 15, backgroundColor: theme.colors.primary }}
-                  labelStyle={{ color: theme.colors.onPrimary }}>
-                  Submit
-                </PaperButton>
-              </Card.Content>
-            </Card>
 
             <View style={localStyles.creatorInfoContainer}>
               <Text style={localStyles.creatorText}>Created by Moutmayen Nafis</Text>
@@ -787,8 +730,45 @@ const AdditionalScreen = () => {
                 — Seneca
               </Text>
             </View>
-          </ScrollView>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.onSurface, marginTop: 20 }]}>
+              Feedback
+            </Text>
+            <Card style={[styles.profileCard, { backgroundColor: '#000' }]}>
+              <Card.Content>
+                <Title style={{ color: '#fff' }}>We value your feedback</Title>
+                <Paragraph style={{ color: '#ccc', marginBottom: 10 }}>
+                  Share your thoughts with us.
+                </Paragraph>
 
+                <Text style={{ color: '#fff', marginBottom: 5 }}>ID</Text>
+                <TextInput
+                  value={feedbackName}
+                  onChangeText={setFeedbackName}
+                  style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, marginBottom: 15 }}
+                  placeholderTextColor="#777"
+                />
+                <Text style={{ color: '#fff', marginBottom: 5 }}>Your Message</Text>
+                <TextInput
+                  value={feedbackMessage}
+                  onChangeText={setFeedbackMessage}
+                  multiline
+                  style={{ backgroundColor: '#333', color: '#fff', padding: 10, borderRadius: 8, height: 100 }}
+                  placeholderTextColor="#777"
+                />
+
+                <PaperButton
+                  mode="contained"
+                  onPress={handleFeedbackSubmit}
+                  loading={isSubmitting}
+                  style={{ marginTop: 15, backgroundColor: theme.colors.primary }}
+                  labelStyle={{ color: theme.colors.onPrimary }}>
+                  Submit
+                </PaperButton>
+              </Card.Content>
+            </Card>
+
+          </ScrollView>
+          
           <QrScannerModal
             visible={isQrModalVisible}
             onClose={() => setIsQrModalVisible(false)}
@@ -815,53 +795,28 @@ const localStyles = StyleSheet.create({
     marginRight: 15,
   },
   webviewButtonCard: {
-    borderRadius: 12,
+    borderRadius: 26,
   },
   webviewButtonAnimatedContainer: {
-    marginBottom: 15,
+    marginBottom: 12,
     borderRadius: 12,
     overflow: 'hidden',
   },
   webviewButtonContent: {
-    paddingVertical: 20,
+    paddingVertical: 16,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   webviewButtonTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
   },
   webviewButtonSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
+    paddingTop: 10,
   },
-  lightBeam: {
-    position: 'absolute',
-    borderRadius: 100, // Make it a circle
-    backgroundColor: '#00FFFF',
-    shadowColor: '#00FFFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-  },
-  mainLight: {
-    width: 25,
-    height: 25,
-    top: -12.5,
-    right: 10,
-  },
-  smallLight1: {
-    width: 15,
-    height: 15,
-    top: 5,
-    right: -5,
-  },
-  smallLight2: {
-    width: 10,
-    height: 10,
-    top: 25,
-    right: 0,
-  },
+
   featureCard: {
     borderRadius: 12,
     width: '100%',
@@ -895,6 +850,12 @@ const localStyles = StyleSheet.create({
     borderRadius: 12,
     padding: 0,
   },
+      starBorderContainer: {
+        padding: 8,
+        marginVertical: 4, 
+        alignItems: 'center', 
+        justifyContent: 'center',
+    },
   courseTitle: {
     fontSize: 24,
     fontWeight: 'bold',

@@ -314,14 +314,17 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
     }
   };
 
-  const pinchGesture = Gesture.Pinch()
-    .onUpdate((event) => {
-      const newZoom = event.scale - 1;
-      let next = zoom + newZoom * 0.1;
-      next = Math.max(0, Math.min(1, next));
-      setZoom(next);
-    });
+const [baseZoom, setBaseZoom] = useState(0);
 
+const pinchGesture = Gesture.Pinch()
+  .onBegin(() => {
+    setBaseZoom(zoom);
+  })
+  .onUpdate((event) => {
+    const newZoom = baseZoom + (event.scale - 1) * 0.5;
+    const clampedZoom = Math.max(0, Math.min(1, newZoom));
+    setZoom(clampedZoom);
+  });
   if (!permission?.granted) {
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -361,15 +364,41 @@ const CameraModal = ({ visible, onClose, onCapture }) => {
         )}
 
         <View style={cameraStyles.bottomBar}>
-          <TouchableOpacity onPress={() => setZoom((z) => Math.max(0, +(z - 0.1).toFixed(3)))} style={cameraStyles.iconButton}>
-            <Ionicons name="remove" size={26} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={takePicture} style={cameraStyles.captureOuter}>
-            <View style={cameraStyles.captureInner} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setZoom((z) => Math.min(1, +(z + 0.1).toFixed(3)))} style={cameraStyles.iconButton}>
-            <Ionicons name="add" size={26} color="white" />
-          </TouchableOpacity>
+<TouchableOpacity 
+  onPress={() => setZoom((z) => Math.max(0, +(z - 0.1).toFixed(3)))} 
+  onLongPress={() => {
+    const interval = setInterval(() => {
+      setZoom(z => Math.max(0, +(z - 0.05).toFixed(3)));
+    }, 100);
+    setTimeout(() => clearInterval(interval), 1000);
+  }}
+  style={cameraStyles.iconButton}
+>
+  <Ionicons name="remove" size={26} color="white" />
+</TouchableOpacity>
+
+{/* Add zoom level indicator */}
+<View style={{ alignItems: 'center' }}>
+  <TouchableOpacity onPress={takePicture} style={cameraStyles.captureOuter}>
+    <View style={cameraStyles.captureInner} />
+  </TouchableOpacity>
+  <Text style={{ color: 'white', fontSize: 12, marginTop: 5 }}>
+    {Math.round(zoom * 10)}x
+  </Text>
+</View>
+
+<TouchableOpacity 
+  onPress={() => setZoom((z) => Math.min(1, +(z + 0.1).toFixed(3)))} 
+  onLongPress={() => {
+    const interval = setInterval(() => {
+      setZoom(z => Math.min(1, +(z + 0.05).toFixed(3)));
+    }, 100);
+    setTimeout(() => clearInterval(interval), 1000);
+  }}
+  style={cameraStyles.iconButton}
+>
+  <Ionicons name="add" size={26} color="white" />
+</TouchableOpacity>
         </View>
       </View>
     </Modal>

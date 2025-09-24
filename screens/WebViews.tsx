@@ -189,9 +189,9 @@ function WebviewListScreen() {
 
     if (loading) {
         return (
-            <View style={[styles.loadingContainer, { backgroundColor: '#000000' }]}>
-                <CircularText text="BRACU*360*" textColor="#fff" />
-            </View>
+                    <View style={localStyles.loadingContainer}>
+                        <CircularText text="BRACU*360*" textColor="#fff" />
+                    </View>
         );
     }
 
@@ -316,7 +316,6 @@ function WebviewDetailScreen({ route }) {
                 <Appbar.Content title={title || "Webview"} titleStyle={styles.appBarTitle} />
             </Appbar.Header>
             <WebView
-                // Pass the ref to the WebView component
                 ref={webviewRef}
                 source={{ uri: url }}
                 style={{ flex: 1, backgroundColor: '#000000' }}
@@ -324,7 +323,6 @@ function WebviewDetailScreen({ route }) {
                 domStorageEnabled={true}
                 startInLoadingState={true}
                 onShouldStartLoadWithRequest={handleDownloadRequest}
-                // Update the canGoBack state based on navigation events
                 onNavigationStateChange={navState => {
                     setCanGoBack(navState.canGoBack);
                 }}

@@ -47,12 +47,25 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
     };
 
     const extractCourseAndSection = (text) => {
-        const regex = /([A-Z]{3,4}\d{3}L?)\s*-\s*(\d{2})/;
+        // Updated regex to handle different cases and formats:
+        // - [A-Z]{3,4} -> 3 or 4 uppercase letters for the course prefix (e.g., CSE, EEE, PHY)
+        // - \d{3}L? -> 3 digits, with an optional 'L' for labs
+        // - \s*? -> zero or more spaces, non-greedy
+        // - (-|—)\s*? -> a hyphen or em dash with optional spaces
+        // - (\d{1,2}) -> captures 1 or 2 digits for the section
+        // - The entire regex is case-insensitive (i).
+        const regex = /([A-Z]{3,4}\s*\d{3}L?)\s*?(-|—)?\s*?(\d{1,2})/i;
         const match = text.match(regex);
-        if (match && match.length > 2) {
+
+        if (match && match.length > 3) {
+            // Trim, convert to uppercase, and remove spaces from the course code
+            const courseCode = match[1].trim().replace(/\s/g, '').toUpperCase();
+            // Pad the section name with a leading zero if it's a single digit
+            const sectionName = match[3].padStart(2, '0').trim();
+
             return {
-                courseCode: match[1].trim(),
-                sectionName: match[2].trim(),
+                courseCode: courseCode,
+                sectionName: sectionName,
             };
         }
         return null;
@@ -136,13 +149,14 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
             }
 
             let finalSchedule = [];
+            let notFoundCourses = [];
 
             coursesToFetch.forEach(item => {
                 if (item.courseCode && item.sectionName) {
                     const matchedCourse = courseRoutines.find(
                         (liveItem) =>
                             liveItem.courseCode?.toUpperCase() === item.courseCode.toUpperCase() &&
-                            liveItem.sectionName === item.sectionName
+                            liveItem.sectionName.padStart(2, '0') === item.sectionName.padStart(2, '0')
                     );
 
                     if (matchedCourse) {
@@ -164,7 +178,7 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                         });
                         
                         if (matchedCourse.labSchedules && matchedCourse.labSchedules.length > 0) {
-                            const labSchedulesFormatted = matchedCourse.labSchedules.map(schedule => 
+                            const labSchedulesFormatted = matchedCourse.labSchedules.map(schedule =>
                                 `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
                             ).join(' / ');
                             finalSchedule.push({
@@ -179,18 +193,28 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                                 semester: currentSemester,
                             });
                         }
+                    } else {
+                        notFoundCourses.push(`${item.courseCode}-${item.sectionName}`);
                     }
                 }
             });
 
             onScheduleFound(finalSchedule);
-            Alert.alert("Success", "Routine uploaded and saved!");
+            let alertMessage = "Routine uploaded and saved!";
+            if (notFoundCourses.length > 0) {
+                alertMessage += `\n\nCould not find the following courses:\n${notFoundCourses.join(', ')}`;
+            }
+            Alert.alert("Success", alertMessage);
             onClose();
         } catch (error) {
             console.error('Error fetching data:', error);
             Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
         } finally {
             setLoading(false);
+            // Reset manual courses list and input fields after saving
+            setManualCourses([]);
+            setCourseCode('');
+            setSectionName('');
         }
     };
 
@@ -216,10 +240,23 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
     };
 
     const handleAddCourse = () => {
-        if (courseCode.trim() && sectionName.trim()) {
-            setManualCourses([...manualCourses, { courseCode: courseCode.toUpperCase().trim(), sectionName: sectionName.trim() }]);
-            setCourseCode('');
-            setSectionName('');
+        // Pre-process inputs for robustness
+        const cleanedCourseCode = courseCode.trim().replace(/\s/g, '').toUpperCase();
+        const cleanedSectionName = sectionName.trim().padStart(2, '0');
+
+        if (cleanedCourseCode && cleanedSectionName) {
+            // Check for duplicate entry before adding
+            const isDuplicate = manualCourses.some(
+                (item) => item.courseCode === cleanedCourseCode && item.sectionName === cleanedSectionName
+            );
+
+            if (!isDuplicate) {
+                setManualCourses([...manualCourses, { courseCode: cleanedCourseCode, sectionName: cleanedSectionName }]);
+                setCourseCode('');
+                setSectionName('');
+            } else {
+                Alert.alert('Duplicate Entry', 'This course and section combination has already been added.');
+            }
         } else {
             Alert.alert('Invalid Input', 'Please enter both a Course Code and a Section.');
         }
@@ -231,6 +268,10 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
         } else {
             Alert.alert('No Courses Added', 'Please add at least one course before saving.');
         }
+    };
+
+    const handleRemoveCourse = (indexToRemove) => {
+        setManualCourses(manualCourses.filter((_, index) => index !== indexToRemove));
     };
 
     return (
@@ -267,7 +308,7 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                     
                     <Text style={localStyles.warningText}>
                         <Text style={{fontWeight: 'bold'}}>Warning: </Text>
-                        Try to avoid uploading routine at the near end of the semester, after connect database has been synced with the next semester's routine.
+                        Avoid Uploading Routine At The Near End Of The Semester, After Connect's Database Has Been Synced With The Next Semester's Routine.
                     </Text>
 
                     {activeTab === 'upload' ? (
@@ -330,7 +371,7 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                                     />
                                     <TextInput
                                         style={[localStyles.input, { borderColor: theme.colors.primary, color: theme.colors.onSurface }]}
-                                        placeholder="Section (e.g., 05)"
+                                        placeholder="Section (e.g., 05 or 5)"
                                         placeholderTextColor={theme.colors.onSurfaceDisabled}
                                         value={sectionName}
                                         onChangeText={setSectionName}
@@ -347,8 +388,16 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                                 <View style={localStyles.courseList}>
                                     {manualCourses.length > 0 ? (
                                         manualCourses.map((item, index) => (
-                                            <View key={index} style={localStyles.courseItem}>
-                                                <Text style={[localStyles.courseText, { color: theme.colors.onSurface }]}>{item.courseCode} - {item.sectionName}</Text>
+                                            <View key={index} style={[localStyles.courseItem, { backgroundColor: theme.colors.surfaceVariant }]}>
+                                                <Text style={[localStyles.courseText, { color: theme.colors.onSurface }]}>{item.courseCode} - {item.sectionName.padStart(2, '0')}</Text>
+                                                <PaperButton
+                                                    onPress={() => handleRemoveCourse(index)}
+                                                    mode="text"
+                                                    compact
+                                                    labelStyle={{ color: theme.colors.error }}
+                                                >
+                                                    Remove
+                                                </PaperButton>
                                             </View>
                                         ))
                                     ) : (
@@ -420,6 +469,9 @@ const localStyles = StyleSheet.create({
         marginBottom: 15,
     },
     courseItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingVertical: 8,
         paddingHorizontal: 12,
         backgroundColor: '#e0e0e0',
