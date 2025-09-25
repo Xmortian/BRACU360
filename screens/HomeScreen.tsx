@@ -4,7 +4,7 @@ import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 
 import ImageViewer from 'react-native-image-zoom-viewer';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { Trash2, ChevronLeft, ChevronRight, Bell, MapPin, User, PlusCircle, Image as ImageIcon, QrCode } from 'lucide-react-native';
+import { Trash2, ChevronLeft, ChevronRight, Bell, MapPin, User, PlusCircle, Image as ImageIcon, QrCode, ArrowLeft  } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 
 import OcrScannerModal from './OcrScanner';
@@ -57,7 +57,7 @@ function ImageUploaderModal({ visible, onClose }) {
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
+            allowsEditing: false, // Changed to false to avoid saving issues
             quality: 1,
         });
 
@@ -66,16 +66,26 @@ function ImageUploaderModal({ visible, onClose }) {
             const fileName = sourceUri.split('/').pop();
             const destinationPath = `${imageDir}${fileName}`;
 
-            try {
-                await FileSystem.copyAsync({
-                    from: sourceUri,
-                    to: destinationPath,
-                });
-                Alert.alert('Success', 'Image saved successfully!');
-                loadImages();
-            } catch (err) {
-                console.error('Error saving image: ', err.message);
-                Alert.alert('Error', 'Failed to save image.');
+            let attempts = 0;
+            const maxAttempts = 3;
+            let success = false;
+
+            while (attempts < maxAttempts && !success) {
+                try {
+                    await FileSystem.copyAsync({
+                        from: sourceUri,
+                        to: destinationPath,
+                    });
+                    success = true;
+                    Alert.alert('Success', 'Image saved successfully!');
+                    loadImages();
+                } catch (err) {
+                    attempts++;
+                    console.error(`Attempt ${attempts} failed to save image:`, err.message);
+                    if (attempts >= maxAttempts) {
+                        Alert.alert('Error', 'Failed to save image after multiple attempts. Please try again.');
+                    }
+                }
             }
         }
     };
@@ -126,7 +136,7 @@ function ImageUploaderModal({ visible, onClose }) {
             <View style={{ flex: 1, backgroundColor: 'white' }}>
                 <View style={localStyles.modalHeader}>
                     <Text style={localStyles.modalTitle}>Quick Access Gallery</Text>
-                    <Text style={localStyles.modalSubtitle}>Store important images (Year Planner, ID Card Etc ).</Text>
+                    <Text style={localStyles.modalSubtitle}>Store images (Year Planner, ID Card, etc.)</Text>
                     <TouchableOpacity
                         onPress={onClose}
                         style={localStyles.closeButton}
@@ -139,7 +149,7 @@ function ImageUploaderModal({ visible, onClose }) {
                     data={images}
                     renderItem={renderThumbnail}
                     keyExtractor={(item) => item.name}
-                    numColumns={3}
+                    numColumns={2}
                     contentContainerStyle={localStyles.thumbnailList}
                 />
 
@@ -161,12 +171,20 @@ function ImageUploaderModal({ visible, onClose }) {
                         renderIndicator={() => null}
                         index={currentImageIndex}
                         onChange={(index) => setCurrentImageIndex(index)}
+                        renderHeader={() => (
+                            <View style={localStyles.imageViewerHeader}>
+                                <TouchableOpacity onPress={() => setIsFullScreenViewerVisible(false)}>
+                                    <ArrowLeft size={24} color="white" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     />
                 </Modal>
             )}
         </Modal>
     );
 }
+
 
 const convert24to12hr = (time) => {
     if (!time) return 'N/A';
@@ -466,8 +484,8 @@ const localStyles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     thumbnailContainer: {
-        width: Dimensions.get('window').width / 2.2,
-        height: Dimensions.get('window').width / 2.2,
+        width: (Dimensions.get('window').width / 2) - 15,
+        height: (Dimensions.get('window').width / 2) - 15,
         margin: 5,
         position: 'relative',
     },
@@ -502,13 +520,19 @@ const localStyles = StyleSheet.create({
     restDayText: {
         position: 'absolute',
         bottom: '18%',
-        color: 'white', // Changed to white for better visibility on the GIF
+        color: 'white',
         fontSize: 28,
         fontWeight: 'bold',
         textShadowColor: 'rgba(0, 0, 0, 0.75)',
         textShadowOffset: { width: 2, height: 2 },
         textShadowRadius: 5,
     },
+    imageViewerHeader: {
+        position: 'absolute',
+        top: 40,
+        left: 20,
+        zIndex: 1,
+    }
 });
 
 export default HomeScreen;

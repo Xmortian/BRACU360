@@ -251,7 +251,7 @@ function QuizModal({ visible, onClose, onQuizComplete }) {
 const ProfileScreen = () => {
     const theme = useTheme();
     const [isQuizVisible, setIsQuizVisible] = useState(false);
-    const [winningHouse, setWinningHouse] = useState('Danshiri');
+        const [winningHouse, setWinningHouse] = useState(null);
     const [isCgpaModalVisible, setIsCgpaModalVisible] = useState(false);
     const [isGradesheetModalVisible, setIsGradesheetModalVisible] = useState(false);
     const [gradesheetData, setGradesheetData] = useState(null);
@@ -445,7 +445,7 @@ const ProfileScreen = () => {
                     <Card.Content>
                         <Title style={{ color: theme.colors.onSurface }}>CGPA Calculator</Title>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant }}>
-                            Recalculate your grades and see what-if scenarios.
+                            Recalculate your grades and explore what-if scenarios like course drops, retakes to see how they could affect your overall performance.
                         </Paragraph>
                         <PaperButton
                             mode="contained"

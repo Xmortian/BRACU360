@@ -10,16 +10,25 @@ import { Camera as CameraIcon, FileText, CalendarCheck, Calendar, ChevronDown, P
 import { DatePickerModal } from 'react-native-paper-dates';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Bell } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import ImageViewing from 'react-native-image-viewing';
 import * as Notifications from 'expo-notifications';
+import { useFocusEffect } from '@react-navigation/native'; 
 
 import styles from '../styles/styles';
 
 const { width, height } = Dimensions.get('window');
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // ----------------------
 // Helpers: saving photos
@@ -459,6 +468,7 @@ const NotesModal = ({ visible, onClose, courseName, onDeleteLocal }) => {
           Close
         </PaperButton>
       </Appbar.Header>
+      
 
       {/* Conditionally render FlatList or ImageViewing */}
       {viewerVisible ? (
@@ -727,6 +737,20 @@ const CoursesScreen = ({ route }) => {
   const handleDeleteGeneralDeadline = (id) => {
     setGeneralDeadlines((prev) => prev.filter((d) => d.id !== id));
   };
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Use useFocusEffect instead of useEffect
+  useFocusEffect(
+    useCallback(() => {
+      // Set up the interval to update the state every minute.
+      const timerId = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000); // 60000 milliseconds = 1 minute
+
+      // Clean up the timer when the screen is out of focus.
+      return () => clearInterval(timerId);
+    }, [])
+  );
 
   const handleAddDeadline = (courseId, deadlineData) => {
     setAllSemestersData((prev) => ({

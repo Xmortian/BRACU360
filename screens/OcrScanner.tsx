@@ -37,6 +37,8 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
 
             if (!result.canceled) {
                 const uri = result.assets[0].uri;
+                            console.log('📷 Image picked, URI:', uri);
+
                 setImageUri(uri);
                 await performOcr(uri);
             }
@@ -127,96 +129,102 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
         return routine;
     };
 
-    const fetchScheduleAndSave = async (coursesToFetch) => {
-        setLoading(true);
-        try {
-            const response = await fetch('https://usis-cdn.eniamza.com/connect.json');
-            if (!response.ok) {
-                throw new Error('Failed to fetch live data from server.');
-            }
-            // The response is now a direct array of course objects
-            const courseRoutines = await response.json();
-            
-            // Get the semesterSessionId from the first course object in the array
-            const semesterSessionId = courseRoutines[0]?.semesterSessionId;
-            let currentSemester = 'N/A';
+const fetchScheduleAndSave = async (coursesToFetch, imageUriParam = null) => {
+    setLoading(true);
+    try {
+        const response = await fetch('https://usis-cdn.eniamza.com/connect.json');
+        if (!response.ok) {
+            throw new Error('Failed to fetch live data from server.');
+        }
+        const courseRoutines = await response.json();
+        
+        const semesterSessionId = courseRoutines[0]?.semesterSessionId;
+        let currentSemester = 'N/A';
 
-            if (semesterSessionId) {
-              const year = Math.floor(semesterSessionId / 10);
-              const semesterCode = semesterSessionId % 10;
-              const semesterName = semesterCode === 1 ? "Spring" : semesterCode === 2 ? "Summer" : "Fall";
-              currentSemester = `${semesterName} ${year}`;
-            }
+        if (semesterSessionId) {
+            const year = Math.floor(semesterSessionId / 10);
+            const semesterCode = semesterSessionId % 10;
+            const semesterName = semesterCode === 1 ? "Spring" : semesterCode === 2 ? "Summer" : "Fall";
+            currentSemester = `${semesterName} ${year}`;
+        }
 
-            let finalSchedule = [];
-            let notFoundCourses = [];
+        let finalSchedule = [];
+        let notFoundCourses = [];
 
-            coursesToFetch.forEach(item => {
-                if (item.courseCode && item.sectionName) {
-                    const matchedCourse = courseRoutines.find(
-                        (liveItem) =>
-                            liveItem.courseCode?.toUpperCase() === item.courseCode.toUpperCase() &&
-                            liveItem.sectionName.padStart(2, '0') === item.sectionName.padStart(2, '0')
-                    );
+        coursesToFetch.forEach(item => {
+            if (item.courseCode && item.sectionName) {
+                const matchedCourse = courseRoutines.find(
+                    (liveItem) =>
+                        liveItem.courseCode?.toUpperCase() === item.courseCode.toUpperCase() &&
+                        liveItem.sectionName.padStart(2, '0') === item.sectionName.padStart(2, '0')
+                );
 
-                    if (matchedCourse) {
-                        const theorySchedules = matchedCourse.sectionSchedule?.classSchedules || [];
-                        const theorySchedulesFormatted = theorySchedules.map(schedule =>
+                if (matchedCourse) {
+                    const theorySchedules = matchedCourse.sectionSchedule?.classSchedules || [];
+                    const theorySchedulesFormatted = theorySchedules.map(schedule =>
+                        `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
+                    ).join(' / ');
+
+                    finalSchedule.push({
+                        courseName: matchedCourse.courseCode,
+                        section: matchedCourse.sectionName,
+                        faculty: matchedCourse.faculties || 'N/A',
+                        room: matchedCourse.roomName || 'N/A',
+                        schedules: theorySchedulesFormatted,
+                        finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
+                        midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
+                        classTimes: matchedCourse.sectionSchedule?.classSchedules || [],
+                        semester: currentSemester,
+                    });
+                    
+                    if (matchedCourse.labSchedules && matchedCourse.labSchedules.length > 0) {
+                        const labSchedulesFormatted = matchedCourse.labSchedules.map(schedule =>
                             `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
                         ).join(' / ');
-
                         finalSchedule.push({
-                            courseName: matchedCourse.courseCode,
+                            courseName: matchedCourse.labCourseCode,
                             section: matchedCourse.sectionName,
-                            faculty: matchedCourse.faculties || 'N/A',
-                            room: matchedCourse.roomName || 'N/A',
-                            schedules: theorySchedulesFormatted,
+                            faculty: matchedCourse.labFaculties || 'N/A',
+                            room: matchedCourse.labRoomName || 'N/A',
+                            schedules: labSchedulesFormatted,
                             finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
                             midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
-                            classTimes: matchedCourse.sectionSchedule?.classSchedules || [],
+                            classTimes: matchedCourse.labSchedules || [],
                             semester: currentSemester,
                         });
-                        
-                        if (matchedCourse.labSchedules && matchedCourse.labSchedules.length > 0) {
-                            const labSchedulesFormatted = matchedCourse.labSchedules.map(schedule =>
-                                `${schedule.day.substring(0, 3)}: ${schedule.startTime.substring(0, 5)}-${schedule.endTime.substring(0, 5)}`
-                            ).join(' / ');
-                            finalSchedule.push({
-                                courseName: matchedCourse.labCourseCode,
-                                section: matchedCourse.sectionName,
-                                faculty: matchedCourse.labFaculties || 'N/A',
-                                room: matchedCourse.labRoomName || 'N/A',
-                                schedules: labSchedulesFormatted,
-                                finalExamDate: matchedCourse.sectionSchedule?.finalExamDate || 'N/A',
-                                midExamDate: matchedCourse.sectionSchedule?.midExamDate || 'N/A',
-                                classTimes: matchedCourse.labSchedules || [],
-                                semester: currentSemester,
-                            });
-                        }
-                    } else {
-                        notFoundCourses.push(`${item.courseCode}-${item.sectionName}`);
                     }
+                } else {
+                    notFoundCourses.push(`${item.courseCode}-${item.sectionName}`);
                 }
-            });
-
-            onScheduleFound(finalSchedule);
-            let alertMessage = "Routine uploaded and saved!";
-            if (notFoundCourses.length > 0) {
-                alertMessage += `\n\nCould not find the following courses:\n${notFoundCourses.join(', ')}`;
             }
-            Alert.alert("Success", alertMessage);
-            onClose();
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
-        } finally {
-            setLoading(false);
-            // Reset manual courses list and input fields after saving
-            setManualCourses([]);
-            setCourseCode('');
-            setSectionName('');
+        });
+
+        // Pass both finalSchedule and imageUri to the callback
+        console.log('📷 OCR imageUri being passed:', imageUri);
+
+        const finalImageUri = activeTab === 'upload' ? imageUriParam : null;
+        console.log('About to pass imageUri:', finalImageUri);
+        
+        onScheduleFound(finalSchedule, finalImageUri);
+
+        let alertMessage = "Routine uploaded and saved!";
+        if (notFoundCourses.length > 0) {
+            alertMessage += `\n\nCould not find the following courses:\n${notFoundCourses.join(', ')}`;
         }
-    };
+        Alert.alert("Success", alertMessage);
+        onClose();
+
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
+    } finally {
+        setLoading(false);
+        setManualCourses([]);
+        setCourseCode('');
+        setSectionName('');
+    }
+};
+
 
     const performOcr = async (uri) => {
         setLoading(true);
@@ -230,7 +238,7 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
             const coursesToFetch = Object.entries(parsedSchedule).flatMap(([day, times]) =>
                 Object.values(times).filter(courseInfo => courseInfo !== "XXXX")
             );
-            await fetchScheduleAndSave(coursesToFetch);
+        await fetchScheduleAndSave(coursesToFetch, uri);  // Pass uri as parameter
         } catch (error) {
             console.error('Error in OCR or data fetching:', error);
             Alert.alert('Processing Error', 'Failed to process your routine. Please try again.');
@@ -262,14 +270,13 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
         }
     };
 
-    const handleSaveManual = () => {
-        if (manualCourses.length > 0) {
-            fetchScheduleAndSave(manualCourses);
-        } else {
-            Alert.alert('No Courses Added', 'Please add at least one course before saving.');
-        }
-    };
-
+const handleSaveManual = () => {
+    if (manualCourses.length > 0) {
+        fetchScheduleAndSave(manualCourses, null);  // No image for manual
+    } else {
+        Alert.alert('No Courses Added', 'Please add at least one course before saving.');
+    }
+};
     const handleRemoveCourse = (indexToRemove) => {
         setManualCourses(manualCourses.filter((_, index) => index !== indexToRemove));
     };
@@ -308,8 +315,7 @@ const OcrScannerModal = ({ visible, onClose, onScheduleFound }) => {
                     
                     <Text style={localStyles.warningText}>
                         <Text style={{fontWeight: 'bold'}}>Warning: </Text>
-                        Avoid Uploading Routine At The Near End Of The Semester, After Connect's Database Has Been Synced With The Next Semester's Routine.
-                    </Text>
+Avoid uploading your routine near the end of the semester, after Connect’s database has been synced with the next semester’s routine.</Text>
 
                     {activeTab === 'upload' ? (
                         <View>

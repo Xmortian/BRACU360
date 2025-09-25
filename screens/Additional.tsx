@@ -698,7 +698,7 @@ const AdditionalScreen = () => {
             </View>
 
             <View style={localStyles.creatorInfoContainer}>
-              <Text style={localStyles.creatorText}>Created by Moutmayen Nafis</Text>
+              <Text style={localStyles.creatorText}>Developed by Moutmayen Nafis</Text>
               <View style={localStyles.socialLinksContainer}>
                 <TouchableOpacity
                   onPress={() => {
@@ -735,12 +735,12 @@ const AdditionalScreen = () => {
             </Text>
             <Card style={[styles.profileCard, { backgroundColor: '#000' }]}>
               <Card.Content>
-                <Title style={{ color: '#fff' }}>We value your feedback</Title>
+                <Title style={{ color: '#fff' }}>We Value Your Feedback</Title>
                 <Paragraph style={{ color: '#ccc', marginBottom: 10 }}>
                   Share your thoughts with us.
                 </Paragraph>
 
-                <Text style={{ color: '#fff', marginBottom: 5 }}>ID</Text>
+                <Text style={{ color: '#fff', marginBottom: 5 }}>Student ID</Text>
                 <TextInput
                   value={feedbackName}
                   onChangeText={setFeedbackName}

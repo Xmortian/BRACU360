@@ -12,6 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+        "notification": {
+      "useNextNotificationsApi": true
+    },
     "ios": {
       "supportsTablet": true
     },
