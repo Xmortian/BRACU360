@@ -1,11 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert, FlatList, Modal, StyleSheet, TextInput } from 'react-native';
 import { Appbar, Card, Title, Paragraph, Button as PaperButton, useTheme } from 'react-native-paper';
 import { Plus, Edit, Trash } from 'lucide-react-native';
 import Svg, { Circle, G, Text as SvgText } from 'react-native-svg';
 import styles from '../styles/styles';
 
-// New: CGPA Wheel Component
+// Program-to-credits mapping
+const programCreditMap = {
+    "BACHELOR OF SCIENCE IN APPLIED PHYSICS AND ELECTRONICS": 130,
+    "BACHELOR OF SOCIAL SCIENCES IN ANTHROPOLOGY": 120,
+    "BACHELOR OF ARCHITECTURE": 207,
+    "BACHELOR OF SCIENCE IN BIOTECHNOLOGY": 136,
+    "BACHELOR OF PHARMACY (HONS)": 164,
+    "BACHELOR OF BUSINESS ADMINISTRATION": 130,
+    "BACHELOR OF SOCIAL SCIENCE IN ECONOMICS": 120,
+    "BACHELOR OF SCIENCE IN MICROBIOLOGY": 136,
+    "BACHELOR OF SCIENCE IN MATHEMATICS": 127,
+    "BACHELOR OF LAWS (LL.B. HONS.)": 135,
+    "BACHELOR OF SCIENCE IN COMPUTER SCIENCE AND ENGINEERING": 136,
+    "BACHELOR OF SCIENCE IN COMPUTER SCIENCE": 124,
+    "BACHELOR OF SCIENCE IN ELECTRONIC AND COMMUNICATION ENGINEERING": 136,
+    "BACHELOR OF ARTS IN ENGLISH": 120,
+    "BACHELOR OF SCIENCE IN PHYSICS": 120,
+    "BACHELOR OF SCIENCE IN ELECTRICAL AND ELECTRONIC ENGINEERING": 136,
+};
+
+// CGPA Wheel Component
 const CGPAWheel = ({ cgpa, maxCgpa }) => {
     const theme = useTheme();
     const radius = 60;
@@ -57,7 +77,7 @@ const CGPAWheel = ({ cgpa, maxCgpa }) => {
     );
 };
 
-// New: Add Course Form Component
+// Add Course Form Component
 const AddCourseForm = ({ onAddCourse, theme }) => {
     const [courseName, setCourseName] = useState('');
     const [credits, setCredits] = useState('');
@@ -75,7 +95,7 @@ const AddCourseForm = ({ onAddCourse, theme }) => {
             credits: parseFloat(credits),
             grade: parseFloat(grade),
             semester: 'Custom',
-            isNonCredit: false,
+            isNonCredit: parseFloat(grade) < 1.0,
         };
 
         if (isNaN(newCourse.credits) || isNaN(newCourse.grade) || newCourse.credits <= 0 || newCourse.grade < 0 || newCourse.grade > 4.0) {
@@ -96,7 +116,7 @@ const AddCourseForm = ({ onAddCourse, theme }) => {
                 style={[formStyles.input, { color: theme.colors.onSurface, borderColor: theme.colors.outline }]}
                 onChangeText={setCourseName}
                 value={courseName}
-                placeholder="Course Code (e.g., CS101)"
+                placeholder="Course Code (e.g., CSE101)"
                 placeholderTextColor={theme.colors.onSurfaceVariant}
             />
             <TextInput
@@ -176,16 +196,66 @@ const CgpaCalcModal = ({ visible, onClose, gradesheetData }) => {
         return totalGradePoints / totalCredits;
     };
 
-    const calculateScenario = (gradeOverride) => {
-        const scenarioGrades = grades.map(course => ({
-            ...course,
-            grade: gradeOverride(course),
-        }));
-        return calculateCGPA(scenarioGrades);
+    const calculateHypotheticalCGPA = (hypotheticalGradePoint) => {
+        const bestGrades = Object.values(
+            grades.reduce((acc, c) => {
+                if (c.credits === 0 || c.grade < 1.0) return acc;
+                if (!acc[c.courseName] || c.grade > acc[c.courseName].grade) {
+                    acc[c.courseName] = { ...c };
+                }
+                return acc;
+            }, {})
+        );
+
+        const totalCompletedCredits = bestGrades.reduce((sum, c) => sum + c.credits, 0);
+        const totalGradePoints = bestGrades.reduce((sum, c) => sum + (c.credits * c.grade), 0);
+        const currentCGPA = totalGradePoints / totalCompletedCredits;
+
+        const programName = gradesheetData?.program?.toUpperCase();
+        const totalProgramCredits = programCreditMap[programName] || 0;
+        const remainingCredits = totalProgramCredits - totalCompletedCredits;
+
+        if (remainingCredits <= 0 || totalProgramCredits === 0) {
+            return currentCGPA.toFixed(2);
+        }
+
+        const newTotalGradePoints = totalGradePoints + (remainingCredits * hypotheticalGradePoint);
+        const newCgpa = newTotalGradePoints / totalProgramCredits;
+        return newCgpa.toFixed(2);
     };
 
     const currentCGPA = calculateCGPA(grades);
-    const maxCGPA = calculateScenario(() => 4.0);
+
+    const totalCompletedCredits = useMemo(() => {
+        if (!gradesheetData || !gradesheetData.semesters) {
+            return 0;
+        }
+
+        const uniqueCourses = {};
+        gradesheetData.semesters.forEach(semester => {
+            semester.courses.forEach(course => {
+                const isPassing = parseFloat(course.gradePoints) >= 1.0 && parseFloat(course.credits) > 0;
+                if (isPassing) {
+                    if (!uniqueCourses[course.courseCode] || parseFloat(course.gradePoints) > parseFloat(uniqueCourses[course.courseCode].gradePoints)) {
+                        uniqueCourses[course.courseCode] = { ...course };
+                    }
+                }
+            });
+        });
+        return Object.values(uniqueCourses).reduce((total, course) => total + course.credits, 0);
+    }, [gradesheetData]);
+
+    const totalProgramCredits = useMemo(() => {
+        const programName = gradesheetData?.program?.toUpperCase();
+        return programCreditMap[programName] || 'N/A';
+    }, [gradesheetData]);
+
+    const remainingCredits = useMemo(() => {
+        if (totalProgramCredits === 'N/A' || totalCompletedCredits === 'N/A') {
+            return 'N/A';
+        }
+        return totalProgramCredits - totalCompletedCredits;
+    }, [totalProgramCredits, totalCompletedCredits]);
 
     const handleCloseModal = () => {
         setGrades([]);
@@ -232,7 +302,7 @@ const CgpaCalcModal = ({ visible, onClose, gradesheetData }) => {
         );
     };
     
-    // New: Handle add course
+    // Handle add course
     const handleAddCourse = (newCourse) => {
         setGrades(prevGrades => [...prevGrades, newCourse]);
         Alert.alert("Course Added", `${newCourse.courseName} has been added and the CGPA has been recalculated.`);
@@ -286,21 +356,45 @@ const CgpaCalcModal = ({ visible, onClose, gradesheetData }) => {
                 </View>
                 <CGPAWheel cgpa={currentCGPA} maxCgpa={4.0} />
             </View>
+            <View style={[styles.profileCard, { backgroundColor: theme.colors.surface, marginBottom: 15 }]}>
+                <Card.Content>
+                    <View style={modalStyles.gradesSummaryContainer}>
+                        <View style={modalStyles.summaryBox}>
+                            <Text style={[modalStyles.summaryValue, { color: theme.colors.primary }]}>{totalCompletedCredits}</Text>
+                            <Text style={[modalStyles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>Completed</Text>
+                        </View>
+                        <View style={modalStyles.summaryBox}>
+                            <Text style={[modalStyles.summaryValue, { color: theme.colors.primary }]}>{totalProgramCredits}</Text>
+                            <Text style={[modalStyles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>Total Required</Text>
+                        </View>
+                        <View style={modalStyles.summaryBox}>
+                            <Text style={[modalStyles.summaryValue, { color: theme.colors.primary }]}>{remainingCredits}</Text>
+                            <Text style={[modalStyles.summaryLabel, { color: theme.colors.onSurfaceVariant }]}>Remaining</Text>
+                        </View>
+                    </View>
+                </Card.Content>
+            </View>
             <View style={modalStyles.scenarioContainer}>
                 <Card style={[styles.cgpaCard, { backgroundColor: theme.colors.surface }]}>
                     <Card.Content>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
-                            <Text>CGPA with all A's: </Text>
-                            <Text style={{ color: theme.colors.primary }}>{calculateScenario(() => 4.0).toFixed(2)}</Text>
+                            <Text>Max Possible CGPA: </Text>
+                            <Text style={{ color: theme.colors.primary }}>{calculateHypotheticalCGPA(4.0)}</Text>
                         </Paragraph>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
                             <Text>CGPA with all A-'s: </Text>
-                            <Text style={{ color: theme.colors.primary }}>{calculateScenario(() => 3.7).toFixed(2)}</Text>
+                            <Text style={{ color: theme.colors.primary }}>{calculateHypotheticalCGPA(3.7)}</Text>
                         </Paragraph>
                         <Paragraph style={{ color: theme.colors.onSurfaceVariant, fontWeight: 'bold' }}>
                             <Text>CGPA with all B+'s: </Text>
-                            <Text style={{ color: theme.colors.primary }}>{calculateScenario(() => 3.3).toFixed(2)}</Text>
+                            <Text style={{ color: theme.colors.primary }}>{calculateHypotheticalCGPA(3.3)}</Text>
                         </Paragraph>
+                        {!gradesheetData && (
+                            <Text style={modalStyles.warningText}>
+                                <Text style={{fontWeight: 'bold'}}> </Text>
+                                Upload Routine To Work On Actual GradeSheet
+                            </Text>
+                        )}
                     </Card.Content>
                 </Card>
             </View>
@@ -429,6 +523,41 @@ const modalStyles = StyleSheet.create({
         marginBottom: 10,
         width: '100%',
     },
+    warningText: {
+        fontSize: 8,
+        color: 'white',
+        backgroundColor: 'rgba(255, 165, 0, 0.7)',
+        padding: 10,
+        borderRadius: 5,
+        textAlign: 'center',
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: 'orange',
+        shadowColor: 'black',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    gradesSummaryContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingVertical: 10,
+        marginBottom: 10,
+    },
+summaryBox: {
+    alignItems: 'center',
+    paddingHorizontal: 5, // Add some padding to prevent text from touching
+},
+summaryValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+},
+summaryLabel: {
+    fontSize: 14,
+    textAlign: 'center',
+},
 });
 
 const wheelStyles = StyleSheet.create({

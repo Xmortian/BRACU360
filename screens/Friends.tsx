@@ -128,6 +128,8 @@ const AddFriendModal = ({ visible, onClose, onAddFriend }) => {
         setIsQrScannerVisible(false);
         try {
             const routineData = JSON.parse(scannedData);
+            console.log("QR Parsed Data:", JSON.stringify(routineData, null, 2));
+
             if (Array.isArray(routineData) && routineData.length > 0) {
                 const courses = routineData.map(c => c.courseName).join(', ');
                 onAddFriend({
@@ -441,7 +443,6 @@ const EditFriendModal = ({ visible, onClose, friend, onSave }) => {
 };
 
 const parseTimeToMinutes = (timeString) => {
-    // Basic time parsing without regular expressions
     if (typeof timeString !== 'string' || !timeString.includes(':')) {
         return -1;
     }
@@ -460,34 +461,32 @@ const parseTimeToMinutes = (timeString) => {
     return hour * 60 + minute;
 };
 
-const getMinutesSinceLastClass = (endTime) => {
+const getMinutesSinceLastClass = (endTimeInMinutes) => {
     const now = new Date();
     const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-    const endMinutes = parseTimeToMinutes(endTime);
     
-    if (endMinutes === -1) return -1;
+    if (endTimeInMinutes === -1) return -1;
 
     // Check if the time has wrapped around to the next day
-    if (nowInMinutes < endMinutes) {
-        return (nowInMinutes + 24 * 60) - endMinutes;
+    if (nowInMinutes < endTimeInMinutes) {
+        return (nowInMinutes + 24 * 60) - endTimeInMinutes;
     }
 
-    return nowInMinutes - endMinutes;
+    return nowInMinutes - endTimeInMinutes;
 };
 
-const getMinutesUntilNextClass = (startTime) => {
+const getMinutesUntilNextClass = (startTimeInMinutes) => {
     const now = new Date();
     const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-    const startMinutes = parseTimeToMinutes(startTime);
 
-    if (startMinutes === -1) return -1;
+    if (startTimeInMinutes === -1) return -1;
 
     // Check if the next class is on the next day
-    if (startMinutes < nowInMinutes) {
-        return (startMinutes + 24 * 60) - nowInMinutes;
+    if (startTimeInMinutes < nowInMinutes) {
+        return (startTimeInMinutes + 24 * 60) - nowInMinutes;
     }
 
-    return startMinutes - nowInMinutes;
+    return startTimeInMinutes - nowInMinutes;
 };
 
 const formatTimeDifference = (minutes) => {
@@ -554,14 +553,14 @@ const getFriendStatus = (routineData) => {
     if (currentTimeInMinutes < firstClass.startTime) {
         const minutesUntil = getMinutesUntilNextClass(firstClass.startTime);
         const formattedTime = formatTimeDifference(minutesUntil);
-        return `First Class Begins in ${formattedTime}`;
+        return `First Class of the day Begins in ${formattedTime}`;
     }
 
     // After last class
     if (currentTimeInMinutes >= lastClass.endTime) {
         const minutesSince = getMinutesSinceLastClass(lastClass.endTime);
         const formattedTime = formatTimeDifference(minutesSince);
-        return `Last class ended ${formattedTime} ago`;
+        return `Class For Today Ended ${formattedTime} Ago`;
     }
     
     // In a class gap
@@ -569,7 +568,7 @@ const getFriendStatus = (routineData) => {
         const currentClassEnd = todaysClasses[i].endTime;
         const nextClassStart = todaysClasses[i + 1].startTime;
         if (currentClassEnd !== -1 && nextClassStart !== -1 && currentTimeInMinutes >= currentClassEnd && currentTimeInMinutes < nextClassStart) {
-            const minutesFree = getMinutesUntilNextClass(todaysClasses[i + 1].startTime);
+            const minutesFree = getMinutesUntilNextClass(todaysClasses[i + 1].startTime);            
             const formattedTime = formatTimeDifference(minutesFree);
             return `Class Gap (Free for ${formattedTime})`;
         }
@@ -616,35 +615,35 @@ const FriendsScreen = () => {
             routineImageUri: 'https://via.placeholder.com/300/00C853/FFFFFF?text=Routine+Alice', 
             routineData: [
                 {
-                    "courseName": "CSE421-14-09A-02C",
+                    "courseName": "CSE421",
                     "classTimes": [
                         { "day": "Monday", "startTime": "11:00 AM", "endTime": "12:20 PM" },
                         { "day": "Monday", "startTime": "12:30 PM", "endTime": "01:50 PM" }
                     ]
                 },
                 {
-                    "courseName": "CSE331-04-KKP-07H-27C",
+                    "courseName": "CSE331",
                     "classTimes": [
                         { "day": "Monday", "startTime": "09:30 AM", "endTime": "10:50 AM" },
                         { "day": "Wednesday", "startTime": "09:30 AM", "endTime": "10:50 AM" }
                     ]
                 },
                 {
-                    "courseName": "CSE423-02-TMD-09A-05C",
+                    "courseName": "CSE423",
                     "classTimes": [
                         { "day": "Monday", "startTime": "03:30 PM", "endTime": "04:50 PM" },
                         { "day": "Wednesday", "startTime": "03:30 PM", "endTime": "04:50 PM" }
                     ]
                 },
                 {
-                    "courseName": "CSE470-16-SOSB-07D-20C",
+                    "courseName": "CSE470",
                     "classTimes": [
                         { "day": "Tuesday", "startTime": "02:00 PM", "endTime": "03:20 PM" },
                         { "day": "Sunday", "startTime": "02:00 PM", "endTime": "03:20 PM" }
                     ]
                 },
                 {
-                    "courseName": "CSE423-02-TMD-10E-27L",
+                    "courseName": "CSE423",
                     "classTimes": [
                         { "day": "Tuesday", "startTime": "08:00 AM", "endTime": "09:20 AM" },
                         { "day": "Tuesday", "startTime": "09:30 AM", "endTime": "10:50 AM" }
@@ -675,6 +674,13 @@ const FriendsScreen = () => {
     const handleAddFriend = (newFriend) => {
         setFriends(prevFriends => [...prevFriends, newFriend]);
     };
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setFriends(prevFriends => [...prevFriends]);
+        }, 180000); 
+
+        return () => clearInterval(interval);
+    }, []);
 
     const handleEditFriend = (friend) => {
         setCurrentFriend(friend);

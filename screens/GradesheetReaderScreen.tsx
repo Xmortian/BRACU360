@@ -118,112 +118,121 @@ const GradesheetScannerModal = ({ visible, onClose, onScanComplete }) => {
         }
     };
 
-    const parseGradesheetData = (fullText) => {
-        if (!fullText) return {};
 
-        const data = {
-            studentId: '',
-            name: '',
-            program: '',
-            semesters: [],
-        };
 
-        const studentIdRegex = /Student ID\s*:\s*(\d+)/;
-        const nameRegex = /Name\s*:\s*(.*)/;
-        const programStartRegex = /PROGRAM:\s*(.*)/;
-        const programEndRegex = /Course No|Course Title/; // Stop condition for program title
-        
-        // Extract basic info
-        const studentIdMatch = fullText.match(studentIdRegex);
-        if (studentIdMatch) data.studentId = studentIdMatch[1].trim();
 
-        const nameMatch = fullText.match(nameRegex);
-        if (nameMatch) data.name = nameMatch[1].trim();
-        
-        // --- NEW LOGIC FOR PROGRAM NAME ---
-        const programStartIndex = fullText.search(programStartRegex);
-        const programEndIndex = fullText.search(programEndRegex);
+const parseGradesheetData = (fullText) => {
+    if (!fullText) return {};
 
-        if (programStartIndex !== -1 && programEndIndex !== -1) {
-            const programBlock = fullText.substring(programStartIndex, programEndIndex);
-            const programLines = programBlock.split('\n');
-            let programName = '';
-            for (const line of programLines) {
-                if (line.match(programStartRegex)) {
-                    programName += line.match(programStartRegex)[1].trim();
-                } else if (line.trim().length > 0) {
-                    programName += ' ' + line.trim();
-                }
+    const data = {
+        studentId: '',
+        name: '',
+        program: '',
+        semesters: [],
+    };
+
+    const studentIdRegex = /Student ID\s*:\s*(\d+)/;
+    const nameRegex = /Name\s*:\s*(.*)/;
+    const programStartRegex = /PROGRAM:\s*(.*)/;
+    const programEndRegex = /Course No|Course Title/;
+
+    const studentIdMatch = fullText.match(studentIdRegex);
+    if (studentIdMatch) data.studentId = studentIdMatch[1].trim();
+
+    const nameMatch = fullText.match(nameRegex);
+    if (nameMatch) data.name = nameMatch[1].trim();
+    
+    const programStartIndex = fullText.search(programStartRegex);
+    const programEndIndex = fullText.search(programEndRegex);
+
+    if (programStartIndex !== -1 && programEndIndex !== -1) {
+        const programBlock = fullText.substring(programStartIndex, programEndIndex);
+        const programLines = programBlock.split('\n');
+        let programName = '';
+        for (const line of programLines) {
+            if (line.match(programStartRegex)) {
+                programName += line.match(programStartRegex)[1].trim();
+            } else if (line.trim().length > 0) {
+                programName += ' ' + line.trim();
             }
-            data.program = programName.trim();
         }
+        data.program = programName.trim();
+    }
 
-        const semesterBlocks = fullText.split(/SEMESTER:/g).slice(1);
+    const semesterBlocks = fullText.split(/SEMESTER:/g).slice(1);
+    
+    semesterBlocks.forEach(block => {
+        const semesterRegex = /(FALL|SPRING|SUMMER)\s*(20\d{2})/;
+        const semesterMatch = block.match(semesterRegex);
         
-        semesterBlocks.forEach(block => {
-            const semesterRegex = /(FALL|SPRING|SUMMER)\s*(20\d{2})/;
-            const semesterMatch = block.match(semesterRegex);
+        if (semesterMatch) {
+            const semesterName = semesterMatch[0].trim();
+            const semester = {
+                name: semesterName,
+                courses: [],
+                gpa: '',
+                cumulativeCgpa: '',
+            };
             
-            if (semesterMatch) {
-                const semesterName = semesterMatch[0].trim();
-                const semester = {
-                    name: semesterName,
-                    courses: [],
-                    gpa: '',
-                    cumulativeCgpa: '',
-                };
+            const lines = block.split('\n');
+            let courseCode = null, credits = null, gradePoints = null;
+            
+            lines.forEach(line => {
+                const courseCodeRegex = /([A-Z]{3})\s?\d{3,4}/;
+
+                const floatRegex = /(\d+\.\d{2})/;
                 
-                const lines = block.split('\n');
-                let courseCode = null, courseTitle = '', credits = null, grade = null, gradePoints = null;
+                // Find the course code first
+                if (line.match(courseCodeRegex)) {
+                    courseCode = line.match(courseCodeRegex)[0].replace(/\s/g, '');
+                    credits = null;
+                    gradePoints = null;
+                } 
                 
-                lines.forEach(line => {
-                    const courseCodeRegex = /(CSE|ENG|MAT|PHY|BNG|EMB|HUM|BUS|STA|POL)\s?\d{3}/;
-                    const creditRegex = /(\d+\.\d{2})/;
-                    const gradeRegex = /([A-Z-][+]*\s*\(?.*?\)?)/;
+                // Then, find credits and grade points sequentially
+                else if (courseCode && line.match(floatRegex)) {
+                    const parsedFloat = parseFloat(line.match(floatRegex)[0]);
                     
-                    if (line.match(courseCodeRegex)) {
-                        courseCode = line.match(courseCodeRegex)[0].replace(/\s/g, '');
-                        courseTitle = '';
-                        credits = null;
-                        grade = null;
-                        gradePoints = null;
-                    } else if (courseCode && line.match(creditRegex) && credits === null) {
-                        credits = parseFloat(line.match(creditRegex)[0]);
-                    } else if (courseCode && line.match(gradeRegex) && grade === null) {
-                        grade = line.match(gradeRegex)[0];
-                    } else if (courseCode && line.match(creditRegex) && gradePoints === null) {
-                        gradePoints = parseFloat(line.match(creditRegex)[0]);
-                        
-                        const isNonCredit = (credits === 0.00 || grade === 'P');
+                    if (credits === null) {
+                        // First float after course code is credits
+                        credits = parsedFloat;
+                    } else if (gradePoints === null) {
+                        // Second float is gradePoints
+                        gradePoints = parsedFloat;
+
+                        // Now that we have all three, push the course
+                        const isNonCredit = (credits === 0.00 || gradePoints < 1.0);
                         
                         semester.courses.push({
                             courseCode,
-                            courseTitle,
+                            courseTitle: '', // Not enough reliable info to get this
                             credits,
-                            grade,
                             gradePoints,
                             isNonCredit,
                         });
+                        
+                        // Reset for the next course
                         courseCode = null;
-                    } else if (courseCode && !credits && !grade && !gradePoints) {
-                        courseTitle += line.trim() + ' ';
+                        credits = null;
+                        gradePoints = null;
                     }
-                });
+                }
+            });
 
-                const gpaRegex = /GPA\s+(\d+\.\d{2})/;
-                const gpaMatch = block.match(gpaRegex);
-                if (gpaMatch) semester.gpa = gpaMatch[1];
-                
-                const cgpaRegex = /CGPA\s+(\d+\.\d{2})/;
-                const cgpaMatch = block.match(cgpaRegex);
-                if (cgpaMatch) semester.cumulativeCgpa = cgpaMatch[1];
+            const gpaRegex = /GPA\s+(\d+\.\d{2})/;
+            const gpaMatch = block.match(gpaRegex);
+            if (gpaMatch) semester.gpa = gpaMatch[1];
+            
+            const cgpaRegex = /CGPA\s+(\d+\.\d{2})/;
+            const cgpaMatch = block.match(cgpaRegex);
+            if (cgpaMatch) semester.cumulativeCgpa = cgpaMatch[1];
 
-                data.semesters.push(semester);
-            }
-        });
+            data.semesters.push(semester);
+        }
+    });
 
-        return data;
-    };
+    return data;
+};
 
     const renderSemester = ({ item }) => (
         <Card style={[modalStyles.semesterCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
